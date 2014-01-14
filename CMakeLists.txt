@@ -6,7 +6,7 @@ set(GLTEXT_SOURCES
     src/gltext.cpp
     include/gltext/gltext.h
 )
-source_group("gltext" FILES ${GLTEXT_SOURCES})
+source_group("gltext" FILES ${GLTEXT_SOURCES} README.md LICENSE.txt)
 include_directories(include)
 
 set(HARFBUZZ_SOURCES
@@ -111,6 +111,7 @@ set(HARFBUZZ_SOURCES
     harfbuzz/src/hb-version.h
     harfbuzz/src/hb-warning.cc
 )
+include_directories(harfbuzz/src/)
 
 set(HARFBUZZ_UCDN_SOURCES
     harfbuzz/src/hb-ucdn/ucdn.c
@@ -131,7 +132,8 @@ add_definitions(-DHAVE_UCDN=1)
 
 add_library(gltext ${GLTEXT_SOURCES} ${HARFBUZZ_SOURCES} ${HARFBUZZ_UCDN_SOURCES})
 
-# TODO SRO : tests
-add_executable(test harfbuzz/src/main.cc)
-target_link_libraries(test ${FREETYPE_LIBRARY} ${OPENGL_gl_LIBRARY} gltext)
-
+option(GLTEXT_BUILD_HARFBUZZ_CMDLINE_TEST "Build the small harfbuzz command line tool." OFF)
+if (GLTEXT_BUILD_HARFBUZZ_CMDLINE_TEST)
+    add_executable(test harfbuzz/src/main.cc)
+    target_link_libraries(test ${FREETYPE_LIBRARY} ${OPENGL_gl_LIBRARY} gltext)
+endif ()
