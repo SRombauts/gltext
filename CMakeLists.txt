@@ -1,10 +1,25 @@
-project(gltext)
-cmake_minimum_required(VERSION 2.8)
+# Copyright (c) 2014 Sebastien Rombauts (sebastien.rombauts@gmail.com)
+#
+# Distributed under the MIT License (MIT) (See accompanying file LICENSE.txt
+# or copy at http://opensource.org/licenses/MIT) 
 
+cmake_minimum_required(VERSION 2.6)
+project(gltext)
+
+# Define useful variables to handle OS/Compiler differences
+if (MSVC)
+    # disable Visual Studio usual warnings
+    add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+elseif (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
+    message(STATUS "C++11 activated for std::shared_ptr")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")  # -std=c++11
+endif ()
 
 set(GLTEXT_SOURCES
-    src/gltext.cpp
-    include/gltext/gltext.h
+    src/Font.cpp include/gltext/Font.h
+    src/FontPimpl.cpp src/FontPimpl.h
+    src/Freetype.cpp src/Freetype.h
+    src/Exception.h
 )
 source_group("gltext" FILES ${GLTEXT_SOURCES} README.md LICENSE.txt)
 include_directories(include)
