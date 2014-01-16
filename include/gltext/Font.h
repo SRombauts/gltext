@@ -28,19 +28,20 @@ class FontImpl;
  * and then the Text result can be used in other threads if needed (the main rendering thread).
  *
  *  Default Copy Constructor and Assignment Operator only copy the shared pointeur,
- * which give a new reference to the Font instance, enabling easy sharing of a Font implementation accross application.
+ * which give a new reference to the Font instance, enabling easy sharing of a Font implementation across application.
  */
 class Font {
 public:
     /**
      * @brief Ask Freetype to open a Font file and initialize it with the given size
      *
-     *  An OpenGL texture is created, that will serve later to render glyph of the font on request, and as a cache.
+     *  An OpenGL Texture is created, that will serve later to render glyph of the font on request, and as a cache.
      * This cache texture has a fixed size and will overflow if to many different characters are rendered.
      * This texture size is calculated based on the font size and the minimum number of characters of the cache.
      * It uses the the best "Power Of Two" texture size able to handle the requested cache size. Thus, if the resulting
      * texture have some extra space, the resulting cache size is expanded to reflect the real available space.
      * For accurate results, ask for a square cache size.
+     *  An OpenGL Vertex Buffer Object (VBO) is also created to contain glyphs vertex position and texture coordinates.
      *
      *  std::exception can be thrown in case of error during this process,
      * thus the new Font object will not be created, and any element will be cleaned accordingly.
@@ -58,10 +59,36 @@ public:
 
     // NOTE : see #Font class header about Copy & Assignment
 
-    // TODO SRombauts
+    /**
+     * @brief Pre-render and cache the glyphs representing the given characters, to speed-up future rendering.
+     *
+     *  This can be time consuming, and involve some memory transfer to the graphic card.
+     * It is best done when loading data, before starting real time rendering. Still, it this step is optional.
+     *
+     *  The cache texture is filled with bitmap glyphs, as well as the An OpenGL VBO with their texture coordinates.
+     *
+     * @param[in] apCharacters UTF-8 encoded string of characters to pre-render and add to the cache.
+     */
     void cache(const char* apCharacters);
+
+    /**
+     * @brief Render the given string of characters (or use existing cached glyphs) and put it on a VAO.
+     *
+     *  An OpenGL Vertex Array Object (VAO) is created and initialized with states needed to draw the text.
+     * An OpenGL Index Buffer Object (IBO) is created to index the glyps to be rendered.
+     * Those internal data are encapsulated and reference-counted into the returned Text object.
+     *
+     * @param[in] apCharacters UTF-8 encoded string of characters to pre-render and add to the cache.
+     *
+     * @return Encapsulation of the constant text rendered with Freetype, ready to be drawn with OpenGL.
+     */
     Text render(const char* apCharacters);
 
+    /**
+     * @brief Access Private Implementation of the Freetype / HarfBuzz Font rendering.
+     *
+     * @return Private Implementation of the Freetype / HarfBuzz Font rendering
+     */
     inline const std::shared_ptr<const FontImpl> getImplPtr() const;
 
 private:

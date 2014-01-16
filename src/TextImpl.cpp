@@ -1,6 +1,6 @@
 /**
  * @file    TextImpl.cpp
- * @brief   Private Implementation of the Freetype / HarfBuzz Text rendering.
+ * @brief   Private Implementation of a static/constant text rendered with Freetype, ready to be drawn with OpenGL.
  *
  * Copyright (c) 2014 Sebastien Rombauts (sebastien.rombauts@gmail.com)
  *
@@ -17,12 +17,12 @@
 
 namespace gltext {
 
-// Ask Freetype to open a Text file and initialize it with the given size
+// Encapsulation.
 TextImpl::TextImpl(const Font& aFont) :
     mFontImplPtr(aFont.getImplPtr()) {
 }
 
-// Cleanup all Freetype and OpenGL ressources when the last reference is destroyed.
+// Private Implementation of a static/constant text rendered with Freetype, ready to be drawn with OpenGL..
 TextImpl::~TextImpl() {
 }
 

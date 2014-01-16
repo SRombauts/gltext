@@ -24,11 +24,11 @@ Font::~Font() {
     // mImplPtr release its reference to the FontImpl instance
 }
 
-// TODO SRombauts
+// Pre-render and cache the glyphs representing the given characters, to speed-up future rendering.
 void Font::cache(const char* apCharacters) {
 }
 
-// TODO SRombauts
+// Render the given string of characters (or use existing cached glyphs) and put it on a VAO/VBO.
 Text Font::render(const char* apCharacters) {
     return Text(*this);
 }

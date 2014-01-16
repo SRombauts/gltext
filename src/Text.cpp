@@ -1,6 +1,6 @@
 /**
  * @file    Text.cpp
- * @brief   A text rendered with freetype, ready to draw with OpenGL.
+ * @brief   Encapsulate a static/constant text rendered with Freetype, ready to be drawn with OpenGL.
  *
  * Copyright (c) 2014 Sebastien Rombauts (sebastien.rombauts@gmail.com)
  *
@@ -15,14 +15,18 @@
 
 namespace gltext {
 
-// TODO
+// Encapsulate the rendered text returned by Font::render(), ready to be drawn with OpenGL.
 Text::Text(const Font& aFont) {
     mImplPtr.reset(new TextImpl(aFont));
 }
 
 // Cleanup all Freetype and OpenGL ressources when the last reference is destroyed.
 Text::~Text() {
-    // mImplPtr release its reference to the FontImpl instance
+    // mImplPtr release its reference to the TextImpl instance
+}
+
+// Ask OpenGL to draw the pre-rendered static text, using the current binded program.
+void Text::draw() {
 }
 
 } // namespace gltext

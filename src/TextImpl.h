@@ -1,6 +1,6 @@
 /**
  * @file    TextImpl.h
- * @brief   Private Implementation of the Freetype / HarfBuzz Text rendering.
+ * @brief   Private Implementation of a static/constant text rendered with Freetype, ready to be drawn with OpenGL.
  *
  * Copyright (c) 2014 Sebastien Rombauts (sebastien.rombauts@gmail.com)
  *
@@ -17,7 +17,7 @@ class Font;
 class FontImpl;
 
 /**
- * @brief Private Implementation of the Freetype / HarfBuzz Text rendering.
+ * @brief Private Implementation of a static/constant text rendered with Freetype, ready to be drawn with OpenGL.
  *
  * @see the Text class for detailed explanation
  *
@@ -27,13 +27,15 @@ class FontImpl;
 class TextImpl {
 public:
     /**
-     * @brief TODO
+     * @brief Encapsulate a text rendered
+     *
+     * @param[in] aFont Reference to the Font instance from which this Text is build.
      *
      * @see Text::Text() for detailed explanation
      */
     explicit TextImpl(const Font& aFont);
     /**
-     * @brief TODO
+     * @brief Cleanup
      */
     ~TextImpl();
 
