@@ -8,7 +8,7 @@
  * or copy at http://opensource.org/licenses/MIT)
  */
 
-#include "Freetype.h"
+#include "Freetype.h"   // NOLINT TODO
 
 #include <hb-ft.h>      // HarfBuzz Freetype interface
 #include <stdexcept>
@@ -18,12 +18,12 @@ namespace gltext {
 
 // Initialize the Freetype library.
 Freetype::Freetype() {
-   FT_Init_FreeType(&mFreetypeLibrary);
+    FT_Init_FreeType(&mLibrary);
 }
 
 // Free the Freetype library.
 Freetype::~Freetype() {
-   FT_Done_FreeType(mFreetypeLibrary);
+    FT_Done_FreeType(mLibrary);
 }
 
 } // namespace gltext

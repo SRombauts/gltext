@@ -8,20 +8,39 @@ project(gltext)
 
 # Define useful variables to handle OS/Compiler differences
 if (MSVC)
+    set(CPPLINT_ARG_OUTPUT      "--output=vs7")
+    set(CPPCHECK_ARG_TEMPLATE   "--template=vs")
+    set(DEV_NULL                "NUL")
     # disable Visual Studio usual warnings
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 elseif (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
+    set(CPPLINT_ARG_OUTPUT      "--output=eclipse")
+    set(CPPCHECK_ARG_TEMPLATE   "--template=gcc")
+    set(DEV_NULL                "/dev/null")
     message(STATUS "C++11 activated for std::shared_ptr")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")  # -std=c++11
 endif ()
+## TODO SRO : tests
+set(CPPLINT_ARG_VERBOSE "--verbose=3")
+set(CPPLINT_ARG_LINELENGTH "--linelength=120")
 
+
+## Core source code ##
+
+set(GLTEXT_API
+    include/gltext/Font.h
+    include/gltext/Text.h
+)
 set(GLTEXT_SOURCES
-    src/Font.cpp include/gltext/Font.h
-    src/FontPimpl.cpp src/FontPimpl.h
+    src/Font.cpp
+    src/FontImpl.cpp src/FontImpl.h
+    src/Text.cpp
+    src/TextImpl.cpp src/TextImpl.h
     src/Freetype.cpp src/Freetype.h
     src/Exception.h
 )
-source_group("gltext" FILES ${GLTEXT_SOURCES} README.md LICENSE.txt)
+source_group(src FILES ${GLTEXT_SOURCES})
+source_group(api FILES ${GLTEXT_API} README.md LICENSE.txt)
 include_directories(include)
 
 set(HARFBUZZ_SOURCES
@@ -145,10 +164,42 @@ include_directories(${FREETYPE_INCLUDE_DIRS})
 add_definitions(-DHAVE_OT=1)
 add_definitions(-DHAVE_UCDN=1)
 
-add_library(gltext ${GLTEXT_SOURCES} ${HARFBUZZ_SOURCES} ${HARFBUZZ_UCDN_SOURCES})
+add_library(gltext ${GLTEXT_SOURCES} ${GLTEXT_API} ${HARFBUZZ_SOURCES} ${HARFBUZZ_UCDN_SOURCES})
 
 option(GLTEXT_BUILD_HARFBUZZ_CMDLINE_TEST "Build the small harfbuzz command line tool." OFF)
 if (GLTEXT_BUILD_HARFBUZZ_CMDLINE_TEST)
     add_executable(test harfbuzz/src/main.cc)
     target_link_libraries(test ${FREETYPE_LIBRARY} ${OPENGL_gl_LIBRARY} gltext)
 endif ()
+
+
+# Optional additional targets:
+
+option(GLTEXT_RUN_CPPLINT "Run cpplint.py tool for Google C++ StyleGuide." ON)
+if (GLTEXT_RUN_CPPLINT)
+    # add a cpplint target to the "all" target
+    add_custom_target(gltext_cpplint
+     ALL
+     COMMAND python cpplint.py ${CPPLINT_ARG_OUTPUT} ${CPPLINT_ARG_VERBOSE} ${CPPLINT_ARG_LINELENGTH} ${GLTEXT_SOURCES} ${GLTEXT_API}
+     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+    )
+endif()
+
+option(GLTEXT_RUN_CPPCHECK "Run cppcheck C++ static analysis tool." ON)
+if (GLTEXT_RUN_CPPCHECK)
+    # add a cppcheck target to the "all" target
+    add_custom_target(gltext_cppcheck
+     ALL
+     COMMAND cppcheck -j 4 cppcheck --enable=style --quiet ${CPPCHECK_ARG_TEMPLATE} ${PROJECT_SOURCE_DIR}/src
+    )
+endif()
+
+option(GLTEXT_RUN_DOXYGEN "Run Doxygen C++ documentation tool." ON)
+if (GLTEXT_RUN_DOXYGEN)
+    # add a Doxygen target to the "all" target
+    add_custom_target(gltext_doxygen
+     ALL
+     COMMAND doxygen Doxyfile > ${DEV_NULL}
+     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+    )
+endif()

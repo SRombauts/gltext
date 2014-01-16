@@ -10,16 +10,27 @@
 
 #include <gltext/Font.h>
 
-#include "FontPimpl.h"
+#include "FontImpl.h"   // NOLINT TODO
 
 namespace gltext {
 
 // Ask Freetype to open a Font file and initialize it with the given size
-Font::Font(const char* apFontFilename, unsigned int aPointSize /* = 16 */, unsigned int aCacheSize /* = 100 */) {
+Font::Font(const char* apPathFilename, unsigned int aPointSize /* = 16 */, unsigned int aCacheSize /* = 100 */) {
+    mImplPtr.reset(new FontImpl(apPathFilename, aPointSize, aCacheSize));
 }
 
 // Cleanup all Freetype and OpenGL ressources when the last reference is destroyed.
 Font::~Font() {
+    // mImplPtr release its reference to the FontImpl instance
+}
+
+// TODO SRombauts
+void Font::cache(const char* apCharacters) {
+}
+
+// TODO SRombauts
+Text Font::render(const char* apCharacters) {
+    return Text(*this);
 }
 
 } // namespace gltext
