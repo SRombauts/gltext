@@ -14,6 +14,7 @@
 #include "Exception.h"  // NOLINT TODO
 
 #include <stdexcept>
+#include <cassert>
 
 namespace gltext {
 
@@ -24,6 +25,17 @@ TextImpl::TextImpl(const Font& aFont) :
 
 // Private Implementation of a static/constant text rendered with Freetype, ready to be drawn with OpenGL..
 TextImpl::~TextImpl() {
+    // releases mFontImplPtr
+}
+
+// Initialize the 3D position where to start to draw the text.
+void TextImpl::setPosition(float aX, float aY, float aZ) {
+    assert(mFontImplPtr);
+}
+
+// Ask OpenGL to draw the pre-rendered static text, using the current binded program, at current position.
+void TextImpl::draw() {
+    assert(mFontImplPtr);
 }
 
 } // namespace gltext

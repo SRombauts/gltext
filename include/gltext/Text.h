@@ -53,7 +53,20 @@ public:
     // NOTE : see #Text class header about Copy & Assignment
 
     /**
-     * @brief Ask OpenGL to draw the pre-rendered static text, using the current binded program.
+     * @brief Initialize the 3D position where to start to draw the text.
+     *
+     *  Position must be expressed in a the appropriate (Right or Left) Handed coordinate system,
+     * depending on the current program used.
+     *  Text will be drawn at constant Y and Z coordinates, in forward X direction.
+     *
+     * @param[in] aX    X coordinate of where to start drawing the text.
+     */
+    void setPosition(float aX, float aY, float aZ);
+
+    /**
+     * @brief Ask OpenGL to draw the pre-rendered static text, using the current binded program, at current position.
+     *
+     * Text is drawn at constant Y and Z coordinates, in forward X direction, starting from setPosition().
      */
     void draw();
 

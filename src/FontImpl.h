@@ -13,6 +13,8 @@
 
 #include <hb-ft.h>  // HarfBuzz Freetype interface
 
+#include "glload.hpp"   // OpenGL types & function pointers
+
 namespace gltext {
 
 /**
@@ -31,10 +33,10 @@ public:
      * @see Font::Font() for detailed explanation
      *
      * @param[in] apPathFilename    Path to the OpenType font file to open with Freetype.
-     * @param[in] aPointSize        Vertical size of the font in pixel
+     * @param[in] aPixelSize        Vertical size of the font in pixel
      * @param[in] aCacheSize        Minimum number of characters to allocate into the cache (use a square value).
      */
-    FontImpl(const char* apPathFilename, unsigned int aPointSize, unsigned int aCacheSize);
+    FontImpl(const char* apPathFilename, unsigned int aPixelSize, unsigned int aCacheSize);
     /**
      * @brief Cleanup all Freetype and OpenGL ressources when the last reference is destroyed.
      */
@@ -42,10 +44,19 @@ public:
 
 private:
     std::string     mPathFilename;  ///< Path to the OpenType font file to open with Freetype.
-    unsigned int    mPointSize;     ///< Vertical size of the font in pixel
-    unsigned int    mCacheSize;     ///< Minimum number of characters to allocate into the cache (use a square value).
+    unsigned int    mCacheSize;     ///< Maximum number of characters to allocate into the cache.
+    unsigned int    mCacheWidth;    ///< Horizontal size of the cache texture.
+    unsigned int    mCacheHeigth;   ///< Vertical size  of the cache texture.
+    unsigned int    mPixelWidth;    ///< Maximal horizontal size of a character in pixel.
+    unsigned int    mPixelHeight;   ///< Vertical size of a character in pixel.
 
     FT_Face         mFace;          ///< Handle to the typographic face object (given typeface/font, in a given style).
+    hb_font_t*      mFont;          ///< Hharfbuzz pointer to the freetype font, for text shaping
+
+    GLuint mCacheVBO;
+    GLuint mTextIBO;
+    GLuint mTextVAO;
+    GLuint mCacheTexture;
 };
 
 } // namespace gltext

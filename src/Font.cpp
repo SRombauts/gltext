@@ -15,8 +15,8 @@
 namespace gltext {
 
 // Ask Freetype to open a Font file and initialize it with the given size
-Font::Font(const char* apPathFilename, unsigned int aPointSize /* = 16 */, unsigned int aCacheSize /* = 100 */) {
-    mImplPtr.reset(new FontImpl(apPathFilename, aPointSize, aCacheSize));
+Font::Font(const char* apPathFilename, unsigned int aPixelSize /* = 16 */, unsigned int aCacheSize /* = 100 */) {
+    mImplPtr.reset(new FontImpl(apPathFilename, aPixelSize, aCacheSize));
 }
 
 // Cleanup all Freetype and OpenGL ressources when the last reference is destroyed.

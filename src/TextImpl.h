@@ -39,6 +39,26 @@ public:
      */
     ~TextImpl();
 
+    /**
+     * @brief Initialize the 3D position where to start to draw the text.
+     *
+     *  Position must be expressed in a the appropriate Right Handed Coordinate system
+     * (or depending on the current program used), where X is
+     *  Text will be drawn at constant Y and Z coordinates, in forward X direction.
+     *
+     * @param[in] aX    X horizontal coordinate of where to start drawing the text.
+     * @param[in] aY    Y vertical coordinate of where to start drawing the text.
+     * @param[in] aZ    Z depth coordinate of where to start drawing the text.
+     */
+    void setPosition(float aX, float aY, float aZ);
+
+    /**
+     * @brief Ask OpenGL to draw the pre-rendered static text, using the current binded program, at current position.
+     *
+     * Text is drawn at constant Y and Z coordinates, in forward X direction, starting from setPosition().
+     */
+    void draw();
+
 private:
     /**
      * @brief Private Implementation of the Freetype / HarfBuzz Font rendering

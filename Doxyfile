@@ -661,9 +661,9 @@ WARN_NO_PARAMDOC       = YES
 # be obtained via FILE_VERSION_FILTER)
 
 # GCC format:
-WARN_FORMAT            = "$file:$line: $text"
+#WARN_FORMAT            = "$file:$line: $text"
 # MSVC format:
-#WARN_FORMAT            = "$file($line): $text"
+WARN_FORMAT            = "$file($line): $text"
 
 # The WARN_LOGFILE tag can be used to specify a file to which warning 
 # and error messages should be written. If left blank the output is written 

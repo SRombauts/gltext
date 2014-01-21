@@ -38,6 +38,8 @@ set(GLTEXT_SOURCES
     src/TextImpl.cpp src/TextImpl.h
     src/Freetype.cpp src/Freetype.h
     src/Exception.h
+    # Temporary: replace with glload or glew
+    src/glload.cpp src/glload.hpp
 )
 source_group(src FILES ${GLTEXT_SOURCES})
 source_group(api FILES ${GLTEXT_API} README.md LICENSE.txt)

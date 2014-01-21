@@ -47,10 +47,10 @@ public:
      * thus the new Font object will not be created, and any element will be cleaned accordingly.
      *
      * @param[in] apPathFilename    Path to the OpenType font file to open with Freetype.
-     * @param[in] aPointSize        Vertical size of the font in pixel
+     * @param[in] aPixelSize        Vertical size of the font in pixel
      * @param[in] aCacheSize        Minimum number of characters to allocate into the cache (use a square value).
      */
-    Font(const char* apPathFilename, unsigned int aPointSize = 16, unsigned int aCacheSize = 100);
+    Font(const char* apPathFilename, unsigned int aPixelSize = 16, unsigned int aCacheSize = 100);
 
     /**
      * @brief Cleanup all Freetype and OpenGL ressources when the last reference is destroyed.
