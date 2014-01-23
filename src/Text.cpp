@@ -9,7 +9,6 @@
  */
 
 #include <gltext/Text.h>
-#include <gltext/Font.h>
 
 #include "TextImpl.h"   // NOLINT TODO
 #include "FontImpl.h"   // NOLINT TODO
@@ -19,8 +18,8 @@
 namespace gltext {
 
 // Encapsulate the rendered text returned by Font::render(), ready to be drawn with OpenGL.
-Text::Text(const Font& aFont) {
-    mImplPtr.reset(new TextImpl(aFont));
+Text::Text(const std::shared_ptr<const FontImpl>& aFontImplPtr) {
+    mImplPtr.reset(new TextImpl(aFontImplPtr));
 }
 
 // Cleanup all Freetype and OpenGL ressources when the last reference is destroyed.

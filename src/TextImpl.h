@@ -13,7 +13,6 @@
 
 namespace gltext {
 
-class Font;
 class FontImpl;
 
 /**
@@ -29,11 +28,11 @@ public:
     /**
      * @brief Encapsulate a text rendered
      *
-     * @param[in] aFont Reference to the Font instance from which this Text is build.
+     * @param[in] aFontImplPtr  Shared pointer to the Font implementation from which this Text is build.
      *
      * @see Text::Text() for detailed explanation
      */
-    explicit TextImpl(const Font& aFont);
+    explicit TextImpl(const std::shared_ptr<const FontImpl>& aFontImplPtr);
     /**
      * @brief Cleanup
      */

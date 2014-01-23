@@ -8,8 +8,6 @@
  * or copy at http://opensource.org/licenses/MIT)
  */
 
-#include <gltext/Font.h>
-
 #include "TextImpl.h"   // NOLINT TODO
 #include "Exception.h"  // NOLINT TODO
 
@@ -19,8 +17,8 @@
 namespace gltext {
 
 // Encapsulation.
-TextImpl::TextImpl(const Font& aFont) :
-    mFontImplPtr(aFont.getImplPtr()) {
+TextImpl::TextImpl(const std::shared_ptr<const FontImpl>& aFontImplPtr) :
+    mFontImplPtr(aFontImplPtr) {
 }
 
 // Private Implementation of a static/constant text rendered with Freetype, ready to be drawn with OpenGL..

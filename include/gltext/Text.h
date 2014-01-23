@@ -17,7 +17,7 @@ namespace gltext {
  * @brief Private Implementation of the rendered text.
  */
 class TextImpl;
-class Font;
+class FontImpl;
 
 /**
  * @brief Encapsulate a static/constant text rendered with Freetype, ready to be drawn with OpenGL.
@@ -36,9 +36,9 @@ public:
      *  An OpenGL Vertex Array Object (VAO) is created and initialized with states needed to draw the text.
      * An OpenGL Index Buffer Object (IBO) is created to index the glyphs to be rendered.
      *
-     * @param[in] aFont Reference to the Font instance from which this Text is build.
+     * @param[in] aFontImplPtr  Shared pointer to the Font implementation from which this Text is build.
      */
-    explicit Text(const Font& aFont);
+    explicit Text(const std::shared_ptr<const FontImpl>& aFontImplPtr);
 
     /**
      * @brief Cleanup all Freetype and OpenGL ressources when the last reference is destroyed.

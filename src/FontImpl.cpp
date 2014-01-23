@@ -167,4 +167,20 @@ FontImpl::~FontImpl() {
     glDeleteVertexArrays(1, &mTextVAO);
 }
 
+// Pre-render and cache the glyphs representing the given characters, to speed-up future rendering.
+void FontImpl::cache(const char* apCharacters) {
+}
+
+// Render the given string of characters (or use existing cached glyphs) and put it on a VAO/VBO.
+Text FontImpl::render(const char* apCharacters, const std::shared_ptr<const FontImpl>& aFontImplPtr) {
+    return Text(aFontImplPtr);
+}
+
+// Pre-render and cache the glyph representing the given unicode Unicode codepoint.
+unsigned int FontImpl::cache(FT_UInt codepoint) {
+    unsigned int idxGlyph = 0;
+    // TODO
+    return idxGlyph;
+}
+
 } // namespace gltext

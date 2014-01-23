@@ -9,6 +9,8 @@
  */
 #pragma once
 
+#include <gltext/Text.h>
+
 #include <string>
 
 #include <hb-ft.h>  // HarfBuzz Freetype interface
@@ -41,6 +43,35 @@ public:
      * @brief Cleanup all Freetype and OpenGL ressources when the last reference is destroyed.
      */
     ~FontImpl();
+
+    /**
+     * @brief Pre-render and cache the glyphs representing the given characters, to speed-up future rendering.
+     *
+     * @see Font::Font() for detailed explanation
+     *
+     * @param[in] apCharacters UTF-8 encoded string of characters to pre-render and add to the cache.
+     */
+    void cache(const char* apCharacters);
+
+    /**
+     * @brief Render the given string of characters (or use existing cached glyphs) and put it on a VAO.
+     *
+     * @see Font::Font() for detailed explanation
+     *
+     * @param[in] apCharacters  UTF-8 encoded string of characters to pre-render and add to the cache.
+     * @param[in] aFontImplPtr  Shared pointer to this Private Implementation.
+     *
+     * @return Encapsulation of the constant text rendered with Freetype, ready to be drawn with OpenGL.
+     */
+    Text render(const char* apCharacters, const std::shared_ptr<const FontImpl>& aFontImplPtr);
+
+private:
+    /**
+     * @brief Pre-render and cache the glyph representing the given unicode Unicode codepoint.
+     *
+     * @param[in] codepoint Unicode character codepoint.
+     */
+    unsigned int cache(FT_UInt codepoint);
 
 private:
     std::string     mPathFilename;  ///< Path to the OpenType font file to open with Freetype.

@@ -41,7 +41,6 @@ public:
      * It uses the the best "Power Of Two" texture size able to handle the requested cache size. Thus, if the resulting
      * texture have some extra space, the resulting cache size is expanded to reflect the real available space.
      * For accurate results, ask for a square cache size.
-     *  An OpenGL Vertex Buffer Object (VBO) is also created to contain glyphs vertex position and texture coordinates.
      *
      *  std::exception can be thrown in case of error during this process,
      * thus the new Font object will not be created, and any element will be cleaned accordingly.
@@ -75,21 +74,15 @@ public:
      * @brief Render the given string of characters (or use existing cached glyphs) and put it on a VAO.
      *
      *  An OpenGL Vertex Array Object (VAO) is created and initialized with states needed to draw the text.
+     * An OpenGL Vertex Buffer Object (VBO) is also created to contain glyphs vertex position and texture coordinates.
      * An OpenGL Index Buffer Object (IBO) is created to index the glyps to be rendered.
      * Those internal data are encapsulated and reference-counted into the returned Text object.
      *
-     * @param[in] apCharacters UTF-8 encoded string of characters to pre-render and add to the cache.
+     * @param[in] apCharacters  UTF-8 encoded string of characters to pre-render and add to the cache.
      *
      * @return Encapsulation of the constant text rendered with Freetype, ready to be drawn with OpenGL.
      */
     Text render(const char* apCharacters);
-
-    /**
-     * @brief Access Private Implementation of the Freetype / HarfBuzz Font rendering.
-     *
-     * @return Private Implementation of the Freetype / HarfBuzz Font rendering
-     */
-    inline const std::shared_ptr<const FontImpl> getImplPtr() const;
 
 private:
     /**
@@ -103,9 +96,5 @@ private:
      */
     std::shared_ptr<FontImpl>   mImplPtr;
 };
-
-inline const std::shared_ptr<const FontImpl> Font::getImplPtr() const {
-    return mImplPtr;
-}
 
 } // namespace gltext
