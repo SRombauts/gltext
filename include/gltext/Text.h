@@ -60,6 +60,8 @@ public:
      *  Text will be drawn at constant Y and Z coordinates, in forward X direction.
      *
      * @param[in] aX    X coordinate of where to start drawing the text.
+     * @param[in] aY    Y coordinate of where to start drawing the text.
+     * @param[in] aZ    Z coordinate of where to start drawing the text.
      */
     void setPosition(float aX, float aY, float aZ);
 

@@ -67,7 +67,15 @@ PFNGLUNIFORM1IPROC glUniform1i;
 PFNGLUNIFORM3FPROC glUniform3f;
 PFNGLGETUNIFORMLOCATIONPROC glGetUniformLocation;
 PFNGLGETATTRIBLOCATIONPROC glGetAttribLocation;
+PFNGLGETSHADERIVPROC glGetShaderiv;
+PFNGLGETSHADERINFOLOGPROC glGetShaderInfoLog;
+PFNGLGETPROGRAMIVPROC glGetProgramiv;
+PFNGLGETPROGRAMINFOLOGPROC glGetProgramInfoLog;
+PFNGLDETACHSHADERPROC glDetachShader;
 
+/**
+ * @brief Initialize OpenGL pointers
+ */
 void initGlPointers() {
 #ifdef _WIN32
     glActiveTexture = (PFNGLACTIVETEXTUREPROC)glPointer("glActiveTexture");
@@ -96,4 +104,9 @@ void initGlPointers() {
     glUniform3f = (PFNGLUNIFORM3FPROC)glPointer("glUniform3f");
     glGetUniformLocation = (PFNGLGETUNIFORMLOCATIONPROC)glPointer("glGetUniformLocation");
     glGetAttribLocation = (PFNGLGETATTRIBLOCATIONPROC)glPointer("glGetAttribLocation");
+    glGetShaderiv = (PFNGLGETSHADERIVPROC)glPointer("glGetShaderiv");
+    glGetShaderInfoLog = (PFNGLGETSHADERINFOLOGPROC)glPointer("glGetShaderInfoLog");
+    glGetProgramiv = (PFNGLGETPROGRAMIVPROC)glPointer("glGetProgramiv");
+    glGetProgramInfoLog = (PFNGLGETPROGRAMINFOLOGPROC)glPointer("glGetProgramInfoLog");
+    glDetachShader = (PFNGLDETACHSHADERPROC)glPointer("glDetachShader");
 }

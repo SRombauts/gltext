@@ -13,6 +13,7 @@
 #include "FontImpl.h"   // NOLINT TODO
 
 #include <cassert>
+#include <string>
 
 namespace gltext {
 
@@ -27,17 +28,17 @@ Font::~Font() {
 }
 
 // Pre-render and cache the glyphs representing the given characters, to speed-up future rendering.
-void Font::cache(const char* apCharacters) {
+void Font::cache(const std::string& aCharacters) {
     assert(mImplPtr);
 
-    mImplPtr->cache(apCharacters);
+    mImplPtr->cache(aCharacters);
 }
 
 // Render the given string of characters (or use existing cached glyphs) and put it on a VAO/VBO.
-Text Font::render(const char* apCharacters) {
+Text Font::render(const std::string& aCharacters) {
     assert(mImplPtr);
 
-    return mImplPtr->render(apCharacters, mImplPtr);
+    return mImplPtr->render(aCharacters, mImplPtr);
 }
 
 } // namespace gltext

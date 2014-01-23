@@ -185,6 +185,8 @@ if (GLTEXT_RUN_CPPLINT)
      COMMAND python cpplint.py ${CPPLINT_ARG_OUTPUT} ${CPPLINT_ARG_VERBOSE} ${CPPLINT_ARG_LINELENGTH} ${GLTEXT_SOURCES} ${GLTEXT_API}
      WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
     )
+else()
+    message(STATUS "GLTEXT_RUN_CPPLINT OFF")
 endif()
 
 option(GLTEXT_RUN_CPPCHECK "Run cppcheck C++ static analysis tool." ON)
@@ -194,6 +196,8 @@ if (GLTEXT_RUN_CPPCHECK)
      ALL
      COMMAND cppcheck -j 4 cppcheck --enable=style --quiet ${CPPCHECK_ARG_TEMPLATE} ${PROJECT_SOURCE_DIR}/src
     )
+else()
+    message(STATUS "GLTEXT_RUN_CPPCHECK OFF")
 endif()
 
 option(GLTEXT_RUN_DOXYGEN "Run Doxygen C++ documentation tool." ON)
@@ -204,4 +208,6 @@ if (GLTEXT_RUN_DOXYGEN)
      COMMAND doxygen Doxyfile > ${DEV_NULL}
      WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
     )
+else()
+    message(STATUS "GLTEXT_RUN_DOXYGEN OFF")
 endif()

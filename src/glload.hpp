@@ -61,5 +61,10 @@ extern PFNGLUNIFORM1IPROC glUniform1i;
 extern PFNGLUNIFORM3FPROC glUniform3f;
 extern PFNGLGETUNIFORMLOCATIONPROC glGetUniformLocation;
 extern PFNGLGETATTRIBLOCATIONPROC glGetAttribLocation;
+extern PFNGLGETSHADERIVPROC glGetShaderiv;
+extern PFNGLGETSHADERINFOLOGPROC glGetShaderInfoLog;
+extern PFNGLGETPROGRAMIVPROC glGetProgramiv;
+extern PFNGLGETPROGRAMINFOLOGPROC glGetProgramInfoLog;
+extern PFNGLDETACHSHADERPROC glDetachShader;
 
 void initGlPointers();

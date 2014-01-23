@@ -13,6 +13,8 @@
 
 #include <gltext/Text.h>
 
+#include <string>
+
 namespace gltext {
 
 /**
@@ -66,9 +68,9 @@ public:
      *
      *  The cache texture is filled with bitmap glyphs, as well as the An OpenGL VBO with their texture coordinates.
      *
-     * @param[in] apCharacters UTF-8 encoded string of characters to pre-render and add to the cache.
+     * @param[in] aCharacters   UTF-8 encoded string of characters to pre-render and add to the cache.
      */
-    void cache(const char* apCharacters);
+    void cache(const std::string& aCharacters);
 
     /**
      * @brief Render the given string of characters (or use existing cached glyphs) and put it on a VAO.
@@ -78,11 +80,11 @@ public:
      * An OpenGL Index Buffer Object (IBO) is created to index the glyps to be rendered.
      * Those internal data are encapsulated and reference-counted into the returned Text object.
      *
-     * @param[in] apCharacters  UTF-8 encoded string of characters to pre-render and add to the cache.
+     * @param[in] aCharacters   UTF-8 encoded string of characters to pre-render and add to the cache.
      *
      * @return Encapsulation of the constant text rendered with Freetype, ready to be drawn with OpenGL.
      */
-    Text render(const char* apCharacters);
+    Text render(const std::string& aCharacters);
 
 private:
     /**

@@ -49,21 +49,21 @@ public:
      *
      * @see Font::Font() for detailed explanation
      *
-     * @param[in] apCharacters UTF-8 encoded string of characters to pre-render and add to the cache.
+     * @param[in] aCharacters   UTF-8 encoded string of characters to pre-render and add to the cache.
      */
-    void cache(const char* apCharacters);
+    void cache(const std::string& aCharacters);
 
     /**
      * @brief Render the given string of characters (or use existing cached glyphs) and put it on a VAO.
      *
      * @see Font::Font() for detailed explanation
      *
-     * @param[in] apCharacters  UTF-8 encoded string of characters to pre-render and add to the cache.
+     * @param[in] aCharacters   UTF-8 encoded string of characters to pre-render and add to the cache.
      * @param[in] aFontImplPtr  Shared pointer to this Private Implementation.
      *
      * @return Encapsulation of the constant text rendered with Freetype, ready to be drawn with OpenGL.
      */
-    Text render(const char* apCharacters, const std::shared_ptr<const FontImpl>& aFontImplPtr);
+    Text render(const std::string& aCharacters, const std::shared_ptr<const FontImpl>& aFontImplPtr);
 
 private:
     /**
@@ -82,12 +82,12 @@ private:
     unsigned int    mPixelHeight;   ///< Vertical size of a character in pixel.
 
     FT_Face         mFace;          ///< Handle to the typographic face object (given typeface/font, in a given style).
-    hb_font_t*      mFont;          ///< Hharfbuzz pointer to the freetype font, for text shaping
+    hb_font_t*      mFont;          ///< Harfbuzz pointer to the freetype font, for text shaping
 
-    GLuint mCacheVBO;
+    GLuint mCacheTexture;
+    GLuint mTextVBO;
     GLuint mTextIBO;
     GLuint mTextVAO;
-    GLuint mCacheTexture;
 };
 
 } // namespace gltext
