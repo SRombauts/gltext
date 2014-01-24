@@ -65,6 +65,16 @@ public:
      */
     Text render(const std::string& aCharacters, const std::shared_ptr<const FontImpl>& aFontImplPtr);
 
+    /**
+     * @brief Draw the cache texture for debug purpose.
+     *
+     * @param[in] aX    X coordinate of where to start drawing the texture.
+     * @param[in] aY    Y coordinate of where to start drawing the texture.
+     * @param[in] aW    Width of the area to draw the texture.
+     * @param[in] aH    Height of the area to draw the texture.
+     */
+    void drawCache(float aX, float aY, float aW, float aH);
+
 private:
     /**
      * @brief Pre-render and cache the glyph representing the given unicode Unicode codepoint.

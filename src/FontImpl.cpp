@@ -16,6 +16,7 @@
 #include <cassert>
 #include <cmath>
 #include <string>
+#include <iostream>     // NOLINT TODO
 
 /**
  * @brief Data of each glyph vertex
@@ -27,7 +28,7 @@ struct GlyphVertex {
     GLfloat t;  ///< Texture t (y) coordinate
 };
 
-#define GLYPH_VERT_SIZE (sizeof(GlyphVertex))
+#define GLYPH_VERT_SIZE (4*sizeof(GlyphVertex))
 #define GLYPH_IDX_SIZE (6*sizeof(GLushort))
 
 static const char* _vertexShaderSource =
@@ -38,12 +39,26 @@ static const char* _vertexShaderSource =
 "\n"
 "smooth out vec2 smoothTexCoord;\n"
 "\n"
-"uniform ivec2 scale;\n"
-"uniform ivec2 offset;\n"
+"uniform vec2 scale;\n"
+"uniform vec2 offset;\n"
 "\n"
 "void main() {\n"
 "    smoothTexCoord = texCoord;\n"
-"    gl_Position = vec4((position+vec2(offset))/vec2(scale) * 2.0 - 1.0, 0.0, 1.0);\n"
+"    gl_Position = vec4((position + offset) * scale, 0.0f, 1.0f);\n"
+"}\n";
+
+static const char* _fragmentShaderPassThrough =
+"#version 130\n"
+"\n"
+"smooth in vec2 smoothTexCoord;\n"
+"\n"
+"out vec4 outputColor;\n"
+"\n"
+"uniform sampler2D textureCache;\n"
+"uniform vec3 color;\n"
+"\n"
+"void main() {\n"
+"    outputColor = texture(textureCache, smoothTexCoord);\n"
 "}\n";
 
 static const char* _fragmentShaderSource =
@@ -51,7 +66,7 @@ static const char* _fragmentShaderSource =
 "\n"
 "smooth in vec2 smoothTexCoord;\n"
 "\n"
-"out vec2 outputColor;\n"
+"out vec4 outputColor;\n"
 "\n"
 "uniform sampler2D textureCache;\n"
 "uniform vec3 color;\n"
@@ -62,25 +77,56 @@ static const char* _fragmentShaderSource =
 "}\n";
 
 
+void _check_gl_error(const char* apFile, int aLine) {
+    bool bHasError = false;
+    GLenum error = glGetError();
+    while (GL_NO_ERROR != error) {
+        const char* pMsg = NULL;
+        switch (error) {
+            case GL_INVALID_ENUM:                   pMsg = "GL_INVALID_ENUM";                  break;
+            case GL_INVALID_VALUE:                  pMsg = "GL_INVALID_VALUE";                 break;
+            case GL_INVALID_OPERATION:              pMsg = "GL_INVALID_OPERATION";             break;
+            case GL_OUT_OF_MEMORY:                  pMsg = "GL_OUT_OF_MEMORY";                 break;
+            case GL_INVALID_FRAMEBUFFER_OPERATION:  pMsg = "GL_INVALID_FRAMEBUFFER_OPERATION"; break;
+            case GL_STACK_UNDERFLOW:                pMsg = "GL_STACK_UNDERFLOW";               break;
+            case GL_STACK_OVERFLOW:                 pMsg = "GL_STACK_OVERFLOW";                break;
+        }
+        bHasError = true;
+        std::cerr << apFile << ":" << aLine << ": " << pMsg << std::endl;
+        error = glGetError();
+    }
+    if (false == bHasError) {
+        std::cout << apFile << ":" << aLine << ": " <<  "checked\n";
+    }
+}
+#define GL_CHECK() _check_gl_error(__FILE__, __LINE__)
+
+
 /**
  * @brief Compile the shaders and link the program
  */
 class Program {
 public:
-    Program() {
+    Program() :
+        mTextureUnit(0) {
+
         initGlPointers();
 
+// TODO
         GLuint mVertexShader = compileShader(GL_VERTEX_SHADER, _vertexShaderSource);
-        GLuint mFragmentShader = compileShader(GL_FRAGMENT_SHADER, _fragmentShaderSource);
+        GLuint mFragmentShader = compileShader(GL_FRAGMENT_SHADER, _fragmentShaderPassThrough);
+//      GLuint mFragmentShader = compileShader(GL_FRAGMENT_SHADER, _fragmentShaderSource);
         mProgram = linkProgram(mVertexShader, mFragmentShader);
 
         glUseProgram(mProgram);
-        glUniform1i(glGetUniformLocation(mProgram, "textureCache"), 0);
         mVertexPositionAttrib = glGetAttribLocation(mProgram, "position");
         mVertexTextureCoordAttrib = glGetAttribLocation(mProgram, "texCoord");
         mScaleUnif = glGetUniformLocation(mProgram, "scale");
         mOffsetUnif = glGetUniformLocation(mProgram, "offset");
         mColorUnif = glGetUniformLocation(mProgram, "color");
+        GLuint textureCacheUnif = glGetUniformLocation(mProgram, "textureCache");
+        glUniform1i(textureCacheUnif, mTextureUnit);
+        GL_CHECK();
     }
 
     ~Program() {
@@ -174,6 +220,8 @@ public:
     }
 
 public:
+    const GLuint mTextureUnit;          ///< id of the texture image unit (0)
+
     GLuint mProgram;                    ///< program linked of a vertex and a fragment shader
     GLuint mVertexPositionAttrib;       ///< vertex position
     GLuint mVertexTextureCoordAttrib;   ///< texture coordinate
@@ -208,8 +256,8 @@ FontImpl::FontImpl(const char* apPathFilename, unsigned int aPixelSize, unsigned
 
     // Calculate actual font size
     mPixelWidth = static_cast<unsigned int>(ceil((mFace->max_advance_width * mFace->size->metrics.y_ppem) /
-                                                   static_cast<float>(mFace->units_per_EM)));
-    mPixelHeight  = static_cast<unsigned int>(ceil((mFace->height * mFace->size->metrics.y_ppem) /
+                                                  static_cast<float>(mFace->units_per_EM)));
+    mPixelHeight = static_cast<unsigned int>(ceil((mFace->height * mFace->size->metrics.y_ppem) /
                                                    static_cast<float>(mFace->units_per_EM)));
 
     // TODO Calculate appropriate texture cache dimension
@@ -222,21 +270,22 @@ FontImpl::FontImpl(const char* apPathFilename, unsigned int aPixelSize, unsigned
     glBindVertexArray(mTextVAO);
     glBindBuffer(GL_ARRAY_BUFFER, mTextVBO);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mTextIBO);
-    glBufferData(GL_ARRAY_BUFFER, GLYPH_VERT_SIZE*mCacheSize, NULL, GL_DYNAMIC_DRAW);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, GLYPH_IDX_SIZE*mCacheSize, NULL, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, GLYPH_VERT_SIZE, NULL, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, GLYPH_IDX_SIZE, NULL, GL_DYNAMIC_DRAW);
     glEnableVertexAttribArray(program.mVertexPositionAttrib);
     glEnableVertexAttribArray(program.mVertexTextureCoordAttrib);
-    glVertexAttribPointer(program.mVertexPositionAttrib, 2, GL_FLOAT, GL_FALSE, 4*sizeof(float), 0);
-    glVertexAttribPointer(program.mVertexTextureCoordAttrib, 2, GL_FLOAT, GL_FALSE, 4*sizeof(float), reinterpret_cast<GLvoid*>(2*sizeof(float))); // NOLINT
+    glVertexAttribPointer(program.mVertexPositionAttrib, 2, GL_FLOAT, GL_FALSE, sizeof(GlyphVertex), 0);
+    glVertexAttribPointer(program.mVertexTextureCoordAttrib, 2, GL_FLOAT, GL_FALSE, sizeof(GlyphVertex), reinterpret_cast<GLvoid*>(sizeof(GlyphVertex)/2)); // NOLINT
 
-    glActiveTexture(GL_TEXTURE0);
+    glActiveTexture(GL_TEXTURE0 + program.mTextureUnit);
     glGenTextures(1, &mCacheTexture);
     glBindTexture(GL_TEXTURE_2D, mCacheTexture);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, mCacheWidth, mCacheHeigth, 0, GL_RED, GL_UNSIGNED_BYTE, NULL);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    GL_CHECK();
 }
 
 // Cleanup all Freetype and OpenGL ressources when the last reference is destroyed.
@@ -250,6 +299,8 @@ FontImpl::~FontImpl() {
 
 // Pre-render and cache the glyphs representing the given characters, to speed-up future rendering.
 void FontImpl::cache(const std::string& aCharacters) {
+    std::cout << "FontImpl::cache(" << aCharacters << ")\n";
+
     // Put the provided UTF-8 encoded characters into a Harfbuzz buffer
     hb_buffer_t* buffer = hb_buffer_create();
     hb_buffer_set_direction(buffer, HB_DIRECTION_LTR);
@@ -257,35 +308,125 @@ void FontImpl::cache(const std::string& aCharacters) {
     // Ask Harfbuzz to shape the UTF-8 buffer
     hb_shape(mFont, buffer, NULL, 0);
 
-    // Get buffer properties    
+    // Get buffer properties
     unsigned len = hb_buffer_get_length(buffer);
     hb_glyph_info_t* glyphs = hb_buffer_get_glyph_infos(buffer, 0);
 //  hb_glyph_position_t* positions = hb_buffer_get_glyph_positions(buffer, 0);
 
-    glActiveTexture(GL_TEXTURE0);
+    Program& program = Program::getInstance();
+    glActiveTexture(GL_TEXTURE0 + program.mTextureUnit);
     glBindTexture(GL_TEXTURE_2D, mCacheTexture);
-    glBindVertexArray(mTextVAO);
 
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    
+
+    GL_CHECK();
+
     // TODO
-    for(unsigned i = 0; i < len; ++i) {
-        // if (not in cache) {
-        //    idx = cacheGlyph(glyphs[i].codepoint)
+    for (unsigned i = 0; i < len; ++i) {
+        // TODO if (not in cache) {
+        unsigned int idxInCache = cache(glyphs[i].codepoint);
         // }
     }
- }
+}
+
+// Pre-render and cache the glyph representing the given unicode Unicode codepoint.
+unsigned int FontImpl::cache(FT_UInt codepoint) {
+    unsigned int idxInCache = 0;
+
+    // Render the glyph with Freetype
+    FT_Error error;
+    error = FT_Load_Glyph(mFace, codepoint, FT_LOAD_RENDER);
+    if (error) {
+        throw Exception("FT_Load_Glyph");
+    }
+
+    // TODO verification and calculation
+    int pitch = mFace->glyph->bitmap.pitch;
+    if (pitch < 0) {
+        pitch = -pitch;
+    }
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch);
+
+    std::cout << "FontImpl::cache(" << codepoint << "):"
+        << " width=" << mFace->glyph->bitmap.width
+        << " rows=" << mFace->glyph->bitmap.rows
+        << " pitch=" << pitch << " (" << mFace->glyph->bitmap.pitch << ")"
+        << "\n";
+
+    // Load the newly rendered glyph into the texture cache
+    // TODO at the appropriate position
+    glTexSubImage2D(
+        GL_TEXTURE_2D, 0,
+        0, 0, mFace->glyph->bitmap.width, mFace->glyph->bitmap.rows,
+        GL_RED, GL_UNSIGNED_BYTE, mFace->glyph->bitmap.buffer);
+
+    // TODO calculation of verticies and indicies
+    // TODO manage the cache
+
+    GL_CHECK();
+
+    return idxInCache;
+}
 
 // Render the given string of characters (or use existing cached glyphs) and put it on a VAO/VBO.
 Text FontImpl::render(const std::string& aCharacters, const std::shared_ptr<const FontImpl>& aFontImplPtr) {
     return Text(aFontImplPtr);
 }
 
-// Pre-render and cache the glyph representing the given unicode Unicode codepoint.
-unsigned int FontImpl::cache(FT_UInt codepoint) {
-    unsigned int idxGlyph = 0;
+// Draw the cache texture for debug purpose.
+void FontImpl::drawCache(float aX, float aY, float aW, float aH) {
+    static bool bFirst = true;
+    if (bFirst) {
+        std::cout << "FontImpl::drawCache()\n";
+        bFirst = false;
+    }
     // TODO
-    return idxGlyph;
+    // ^ y/t
+    // |
+    // 3 - 2
+    // | / |
+    // 0 - 1 -> x/s
+    GlyphVertex corners[4];
+    corners[0].x = aX;
+    corners[0].y = aY;
+    corners[0].s = 0.0f;
+    corners[0].t = 1.0f;
+
+    corners[1].x = aX + aW;
+    corners[1].y = aY;
+    corners[1].s = 1.0f;
+    corners[1].t = 1.0f;
+
+    corners[2].x = aX + aW;
+    corners[2].y = aY + aH;
+    corners[2].s = 1.0f;
+    corners[2].t = 0.0f;
+
+    corners[3].x = aX;
+    corners[3].y = aY + aH;
+    corners[3].s = 0.0f;
+    corners[3].t = 0.0f;
+    unsigned short indices[6] = {0, 1, 2,  2, 3, 0};
+
+    Program& program = Program::getInstance();
+
+    glActiveTexture(GL_TEXTURE0 + program.mTextureUnit);
+    glBindTexture(GL_TEXTURE_2D, mCacheTexture);
+    // TODO Doc
+    if (glBindSampler) {
+        glBindSampler(0, 0);
+    }
+    glBindVertexArray(mTextVAO);
+    glUseProgram(program.mProgram);
+    // TODO use real values
+    glUniform2f(program.mScaleUnif, 1/640.0f, 1/480.0f);
+    glUniform2f(program.mOffsetUnif, 0, 0);
+    glUniform3f(program.mColorUnif, 1.0f, 1.0f, 0.0f);
+
+    glBindVertexArray(mTextVAO);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, GLYPH_VERT_SIZE, corners);
+    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, GLYPH_IDX_SIZE, indices);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
 }
 
 } // namespace gltext

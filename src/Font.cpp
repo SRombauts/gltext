@@ -41,4 +41,11 @@ Text Font::render(const std::string& aCharacters) {
     return mImplPtr->render(aCharacters, mImplPtr);
 }
 
+// Draw the cache texture for debug purpose.
+void Font::drawCache(float aX, float aY, float aW, float aH) {
+    assert(mImplPtr);
+
+    mImplPtr->drawCache(aX, aY, aW, aH);
+}
+
 } // namespace gltext

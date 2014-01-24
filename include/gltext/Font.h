@@ -86,6 +86,16 @@ public:
      */
     Text render(const std::string& aCharacters);
 
+    /**
+     * @brief Draw the cache texture for debug purpose.
+     *
+     * @param[in] aX    X coordinate of where to start drawing the texture.
+     * @param[in] aY    Y coordinate of where to start drawing the texture.
+     * @param[in] aW    Width of the area to draw the texture.
+     * @param[in] aH    Height of the area to draw the texture.
+     */
+    void drawCache(float aX, float aY, float aW, float aH);
+
 private:
     /**
      * @brief Private Implementation of the Freetype / HarfBuzz Font rendering
