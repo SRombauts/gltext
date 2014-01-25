@@ -74,6 +74,8 @@ PFNGLGETPROGRAMIVPROC glGetProgramiv;
 PFNGLGETPROGRAMINFOLOGPROC glGetProgramInfoLog;
 PFNGLDETACHSHADERPROC glDetachShader;
 
+namespace glload {
+
 /**
  * @brief Initialize OpenGL pointers
  */
@@ -112,3 +114,5 @@ void initGlPointers() {
     glGetProgramInfoLog = (PFNGLGETPROGRAMINFOLOGPROC)glPointer("glGetProgramInfoLog");
     glDetachShader = (PFNGLDETACHSHADERPROC)glPointer("glDetachShader");
 }
+
+} // namespace glload

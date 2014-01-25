@@ -34,31 +34,21 @@ struct GlyphVertex {
 static const char* _vertexShaderSource =
 "#version 130\n"
 "\n"
+"// Attributes (input data streams ; 2D vertex position and texture coordinates)\n"
 "layout(location = 0) in vec2 position;\n"
 "layout(location = 1) in vec2 texCoord;\n"
 "\n"
+"// Output data stream (smoothed interpolated texture 2D coordinates)\n"
 "smooth out vec2 smoothTexCoord;\n"
 "\n"
+"// Uniform variables\n"
 "uniform vec2 scale;\n"
 "uniform vec2 offset;\n"
 "\n"
 "void main() {\n"
-"    smoothTexCoord = texCoord;\n"
+"    // positions are scaled and offseted\n"
 "    gl_Position = vec4((position + offset) * scale, 0.0f, 1.0f);\n"
-"}\n";
-
-static const char* _fragmentShaderPassThrough =
-"#version 130\n"
-"\n"
-"smooth in vec2 smoothTexCoord;\n"
-"\n"
-"out vec4 outputColor;\n"
-"\n"
-"uniform sampler2D textureCache;\n"
-"uniform vec3 color;\n"
-"\n"
-"void main() {\n"
-"    outputColor = texture(textureCache, smoothTexCoord);\n"
+"    smoothTexCoord = texCoord;\n"
 "}\n";
 
 static const char* _fragmentShaderSource =
@@ -72,8 +62,10 @@ static const char* _fragmentShaderSource =
 "uniform vec3 color;\n"
 "\n"
 "void main() {\n"
-"    float val = texture(textureCache, smoothTexCoord).r;\n"
-"    outputColor = vec4(color*val, val);\n"
+"    // Texture gives only grayed ('black & white') intensity onto the 'GL_RED' color component\n"
+"    float textureIntensity = texture(textureCache, smoothTexCoord).r;\n"
+"    // Texture intensity is composed with pen color, and also drives the alpha component\n"
+"    outputColor = vec4(color*textureIntensity, textureIntensity);\n"
 "}\n";
 
 
@@ -110,14 +102,15 @@ public:
     Program() :
         mTextureUnit(0) {
 
-        initGlPointers();
+        // Load OpenGL 3 function pointers
+        glload::initGlPointers();
 
-// TODO
+        // Compile shader and link program
         GLuint mVertexShader = compileShader(GL_VERTEX_SHADER, _vertexShaderSource);
-        GLuint mFragmentShader = compileShader(GL_FRAGMENT_SHADER, _fragmentShaderPassThrough);
-//      GLuint mFragmentShader = compileShader(GL_FRAGMENT_SHADER, _fragmentShaderSource);
+        GLuint mFragmentShader = compileShader(GL_FRAGMENT_SHADER, _fragmentShaderSource);
         mProgram = linkProgram(mVertexShader, mFragmentShader);
 
+        // Fetch Attribute (input data streams) and Unitform (variables) locations (ids)
         glUseProgram(mProgram);
         mVertexPositionAttrib = glGetAttribLocation(mProgram, "position");
         mVertexTextureCoordAttrib = glGetAttribLocation(mProgram, "texCoord");

@@ -68,4 +68,8 @@ extern PFNGLGETPROGRAMIVPROC glGetProgramiv;
 extern PFNGLGETPROGRAMINFOLOGPROC glGetProgramInfoLog;
 extern PFNGLDETACHSHADERPROC glDetachShader;
 
+namespace glload {
+
 void initGlPointers();
+
+} // namespace glload
