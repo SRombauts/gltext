@@ -69,8 +69,7 @@ static const char* _fragmentShaderSource =
 "}\n";
 
 
-void _check_gl_error(const char* apFile, int aLine) {
-    bool bHasError = false;
+void checkOpenGlError(const char* apFile, int aLine) {
     GLenum error = glGetError();
     while (GL_NO_ERROR != error) {
         const char* pMsg = NULL;
@@ -83,15 +82,11 @@ void _check_gl_error(const char* apFile, int aLine) {
             case GL_STACK_UNDERFLOW:                pMsg = "GL_STACK_UNDERFLOW";               break;
             case GL_STACK_OVERFLOW:                 pMsg = "GL_STACK_OVERFLOW";                break;
         }
-        bHasError = true;
         std::cerr << apFile << ":" << aLine << ": " << pMsg << std::endl;
         error = glGetError();
     }
-    if (false == bHasError) {
-        std::cout << apFile << ":" << aLine << ": " <<  "checked\n";
-    }
 }
-#define GL_CHECK() _check_gl_error(__FILE__, __LINE__)
+#define GL_CHECK() checkOpenGlError(__FILE__, __LINE__)
 
 
 /**
@@ -253,23 +248,49 @@ FontImpl::FontImpl(const char* apPathFilename, unsigned int aPixelSize, unsigned
     mPixelHeight = static_cast<unsigned int>(ceil((mFace->height * mFace->size->metrics.y_ppem) /
                                                    static_cast<float>(mFace->units_per_EM)));
 
-    // TODO Calculate appropriate texture cache dimension
-    mCacheWidth = mPixelWidth;
-    mCacheHeigth = mPixelHeight;
+    std::cout << "FontImpl::FontImpl(" << apPathFilename << ", " << aPixelSize << "): "
+        << mPixelWidth << "x" << mPixelHeight << std::endl;
 
-    glGenVertexArrays(1, &mTextVAO);
-    glGenBuffers(1, &mTextVBO);
-    glGenBuffers(1, &mTextIBO);
-    glBindVertexArray(mTextVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, mTextVBO);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mTextIBO);
+    // TODO Calculate appropriate texture cache dimension
+    mCacheWidth = 7 * mPixelWidth;
+    mCacheHeigth = 7 * mPixelHeight;
+    mCacheSize = 7 * 7;
+    mCacheNbGlyps = 0;
+    mCacheFreeSlotX = 0;
+    mCacheFreeSlotY = 0;
+
+    // For cache debug draw
+    glGenVertexArrays(1, &mCacheVAO);
+    glGenBuffers(1, &mCacheVBO);
+    glGenBuffers(1, &mCacheIBO);
+    glBindVertexArray(mCacheVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, mCacheVBO);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mCacheIBO);
     glBufferData(GL_ARRAY_BUFFER, GLYPH_VERT_SIZE, NULL, GL_DYNAMIC_DRAW);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, GLYPH_IDX_SIZE, NULL, GL_DYNAMIC_DRAW);
     glEnableVertexAttribArray(program.mVertexPositionAttrib);
     glEnableVertexAttribArray(program.mVertexTextureCoordAttrib);
     glVertexAttribPointer(program.mVertexPositionAttrib, 2, GL_FLOAT, GL_FALSE, sizeof(GlyphVertex), 0);
     glVertexAttribPointer(program.mVertexTextureCoordAttrib, 2, GL_FLOAT, GL_FALSE, sizeof(GlyphVertex), reinterpret_cast<GLvoid*>(sizeof(GlyphVertex)/2)); // NOLINT
+    GL_CHECK();
 
+    // TODO move these into TextImpl class
+    size_t TextLength = mCacheSize;
+    glGenVertexArrays(1, &mTextVAO);
+    glGenBuffers(1, &mTextVBO);
+    glGenBuffers(1, &mTextIBO);
+    glBindVertexArray(mTextVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, mTextVBO);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mTextIBO);
+    glBufferData(GL_ARRAY_BUFFER, TextLength * GLYPH_VERT_SIZE, NULL, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, TextLength * GLYPH_IDX_SIZE, NULL, GL_DYNAMIC_DRAW);
+    glEnableVertexAttribArray(program.mVertexPositionAttrib);
+    glEnableVertexAttribArray(program.mVertexTextureCoordAttrib);
+    glVertexAttribPointer(program.mVertexPositionAttrib, 2, GL_FLOAT, GL_FALSE, sizeof(GlyphVertex), 0);
+    glVertexAttribPointer(program.mVertexTextureCoordAttrib, 2, GL_FLOAT, GL_FALSE, sizeof(GlyphVertex), reinterpret_cast<GLvoid*>(sizeof(GlyphVertex)/2)); // NOLINT
+    GL_CHECK();
+
+    // Cache texture
     glActiveTexture(GL_TEXTURE0 + program.mTextureUnit);
     glGenTextures(1, &mCacheTexture);
     glBindTexture(GL_TEXTURE_2D, mCacheTexture);
@@ -285,9 +306,12 @@ FontImpl::FontImpl(const char* apPathFilename, unsigned int aPixelSize, unsigned
 FontImpl::~FontImpl() {
     hb_font_destroy(mFont);
     glDeleteTextures(1, &mCacheTexture);
+    glDeleteVertexArrays(1, &mCacheVAO);
+    glDeleteBuffers(1, &mCacheVBO);
+    glDeleteBuffers(1, &mCacheIBO);
+    glDeleteVertexArrays(1, &mTextVAO);
     glDeleteBuffers(1, &mTextVBO);
     glDeleteBuffers(1, &mTextIBO);
-    glDeleteVertexArrays(1, &mTextVAO);
 }
 
 // Pre-render and cache the glyphs representing the given characters, to speed-up future rendering.
@@ -350,11 +374,17 @@ unsigned int FontImpl::cache(FT_UInt codepoint) {
     // TODO at the appropriate position
     glTexSubImage2D(
         GL_TEXTURE_2D, 0,
-        0, 0, mFace->glyph->bitmap.width, mFace->glyph->bitmap.rows,
+        mCacheFreeSlotX, mCacheFreeSlotY, mFace->glyph->bitmap.width, mFace->glyph->bitmap.rows,
         GL_RED, GL_UNSIGNED_BYTE, mFace->glyph->bitmap.buffer);
 
     // TODO calculation of verticies and indicies
     // TODO manage the cache
+    mCacheNbGlyps++;
+    mCacheFreeSlotX += mPixelWidth;
+    if (mCacheWidth <= mCacheFreeSlotX) {
+        mCacheFreeSlotX = 0;
+        mCacheFreeSlotY += mPixelHeight;
+    }
 
     GL_CHECK();
 
@@ -409,10 +439,9 @@ void FontImpl::drawCache(float aX, float aY, float aW, float aH) {
     if (glBindSampler) {
         glBindSampler(0, 0);
     }
-    glBindVertexArray(mTextVAO);
     glUseProgram(program.mProgram);
     // TODO use real values
-    glUniform2f(program.mScaleUnif, 1/640.0f, 1/480.0f);
+    glUniform2f(program.mScaleUnif, 2/640.0f, 2/480.0f);
     glUniform2f(program.mOffsetUnif, 0, 0);
     glUniform3f(program.mColorUnif, 1.0f, 1.0f, 0.0f);
 

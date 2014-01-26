@@ -88,6 +88,9 @@ private:
     unsigned int    mCacheSize;     ///< Maximum number of characters to allocate into the cache.
     unsigned int    mCacheWidth;    ///< Horizontal size of the cache texture.
     unsigned int    mCacheHeigth;   ///< Vertical size  of the cache texture.
+    unsigned int    mCacheNbGlyps;   ///< Maximum number of characters to allocate into the cache.
+    unsigned int    mCacheFreeSlotX; ///< X coordinate of next free slot on the cache texture.
+    unsigned int    mCacheFreeSlotY; ///< Y coordinate of next free slot on the cache texture.
     unsigned int    mPixelWidth;    ///< Maximal horizontal size of a character in pixel.
     unsigned int    mPixelHeight;   ///< Vertical size of a character in pixel.
 
@@ -95,9 +98,14 @@ private:
     hb_font_t*      mFont;          ///< Harfbuzz pointer to the freetype font, for text shaping
 
     GLuint mCacheTexture;
+    // For cache debug draw
+    GLuint mCacheVAO;
+    GLuint mCacheVBO;
+    GLuint mCacheIBO;
+    // TODO move these into TextImpl class
+    GLuint mTextVAO;
     GLuint mTextVBO;
     GLuint mTextIBO;
-    GLuint mTextVAO;
 };
 
 } // namespace gltext
