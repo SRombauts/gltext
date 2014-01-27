@@ -224,8 +224,7 @@ namespace gltext {
 
 // Ask Freetype to open a Font file and initialize it with the given size
 FontImpl::FontImpl(const char* apPathFilename, unsigned int aPixelSize, unsigned int aCacheSize) :
-    mPathFilename(apPathFilename),
-    mCacheSize(aCacheSize) {
+    mPathFilename(apPathFilename) {
     Freetype& freetype = Freetype::getInstance();
     Program& program = Program::getInstance();
     // Load the font from file
@@ -243,20 +242,21 @@ FontImpl::FontImpl(const char* apPathFilename, unsigned int aPixelSize, unsigned
     mFont = hb_ft_font_create(mFace, 0);
 
     // Calculate actual font size
-    mCacheSlotWidth = static_cast<unsigned int>(ceil((mFace->max_advance_width * mFace->size->metrics.y_ppem) /
-                                                  static_cast<float>(mFace->units_per_EM)));
-    mCacheSlotHeight = static_cast<unsigned int>(ceil((mFace->height * mFace->size->metrics.y_ppem) /
-                                                   static_cast<float>(mFace->units_per_EM)));
+    unsigned long maxSlotWidth = static_cast<unsigned int>(
+        ceil((mFace->max_advance_width * mFace->size->metrics.y_ppem) / static_cast<float>(mFace->units_per_EM)));
+    unsigned long maxSlotHeight = static_cast<unsigned int>(
+        ceil((mFace->height * mFace->size->metrics.y_ppem) / static_cast<float>(mFace->units_per_EM)));
 
-    std::cout << "FontImpl::FontImpl(" << apPathFilename << ", " << aPixelSize << "): "
-        << mCacheSlotWidth << "x" << mCacheSlotHeight << std::endl;
-
-    // TODO Calculate appropriate texture cache dimension
-    mCacheWidth = 7 * mCacheSlotWidth;
-    mCacheHeigth = 7 * mCacheSlotHeight;
-    mCacheSize = 7 * 7;
+    // TODO Calculate appropriate texture cache dimension from aCacheSize => use the Next Power Of Two (NPOT)
+    mCacheWidth = 256;
+    mCacheHeight = 256;
+    mCacheLineHeight = 0;
     mCacheFreeSlotX = 0;
     mCacheFreeSlotY = 0;
+
+    std::cout << "FontImpl::FontImpl(" << apPathFilename << ", " << aPixelSize << "): "
+        << maxSlotWidth << "x" << maxSlotHeight
+        << " (cache " << mCacheWidth << "x" << mCacheHeight << ")" << std::endl;
 
     // For cache debug draw
     glGenVertexArrays(1, &mCacheVAO);
@@ -274,7 +274,7 @@ FontImpl::FontImpl(const char* apPathFilename, unsigned int aPixelSize, unsigned
     GL_CHECK();
 
     // TODO move these into TextImpl class
-    size_t TextLength = mCacheSize;
+    size_t TextLength = aCacheSize;
     glGenVertexArrays(1, &mTextVAO);
     glGenBuffers(1, &mTextVBO);
     glGenBuffers(1, &mTextIBO);
@@ -293,7 +293,7 @@ FontImpl::FontImpl(const char* apPathFilename, unsigned int aPixelSize, unsigned
     glActiveTexture(GL_TEXTURE0 + program.mTextureUnit);
     glGenTextures(1, &mCacheTexture);
     glBindTexture(GL_TEXTURE_2D, mCacheTexture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, mCacheWidth, mCacheHeigth, 0, GL_RED, GL_UNSIGNED_BYTE, NULL);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, mCacheWidth, mCacheHeight, 0, GL_RED, GL_UNSIGNED_BYTE, NULL);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -339,7 +339,7 @@ void FontImpl::cache(const std::string& aCharacters) {
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
     GL_CHECK();
 
-    // TODO
+    // Iterate over the glyphs of the text
     for (unsigned i = 0; i < len; ++i) {
         // Is the glyph corresponding to the codepoint already in the cache ?
         GlyphIdxMap::const_iterator iGlyph = mCacheGlyphIdxMap.find(glyphs[i].codepoint);
@@ -363,6 +363,19 @@ unsigned int FontImpl::cache(FT_UInt codepoint) {
     }
 
     // TODO verification and calculation
+
+    // Does the free slot is wide enough to hold the new glyph ?
+    if (mCacheWidth <= mCacheFreeSlotX + bitmap.width) {
+        // else start with the next line
+        mCacheFreeSlotY += mCacheLineHeight;
+        mCacheFreeSlotX = 0;
+        mCacheLineHeight = 0;
+    }
+    // Does the free slot is high enough to hold the new glyph ?
+    if (mCacheHeight <= mCacheFreeSlotY + bitmap.rows) {
+        throw Exception("Cache overflow");
+    }
+
     // The pitch is positive when the bitmap has a `down' flow, and negative when it has an `up' flow.
     // In all cases, the pitch is an offset to add to a bitmap pointer in order to go down one row.
     int pitch = bitmap.pitch;
@@ -386,16 +399,22 @@ unsigned int FontImpl::cache(FT_UInt codepoint) {
         GL_RED, GL_UNSIGNED_BYTE, bitmap.buffer);
     GL_CHECK();
 
-    // TODO calculation of verticies and indicies
+    // Increase height of the current row if needed
+    if (bitmap.rows > static_cast<int>(mCacheLineHeight)) {
+        mCacheLineHeight = bitmap.rows;
+    }
+    // Optimize the usage of cache texture; only use the space taken by the glyph
+    mCacheFreeSlotX += bitmap.width;
+    if (mCacheWidth <= mCacheFreeSlotX) {
+        mCacheFreeSlotY += mCacheLineHeight;
+        mCacheFreeSlotX = 0;
+        mCacheLineHeight = 0;
+    }
 
     // Add the idx of the glyph into the map
     mCacheGlyphIdxMap[codepoint] = idxInCache;
-    // TODO optimize the usage of cache texture; only use the space taken by the glyph
-    mCacheFreeSlotX += mCacheSlotWidth;
-    if (mCacheWidth <= mCacheFreeSlotX) {
-        mCacheFreeSlotX = 0;
-        mCacheFreeSlotY += mCacheSlotHeight;
-    }
+    
+    // TODO Add a 2 vectors for verticies and indicies
 
     return idxInCache;
 }
