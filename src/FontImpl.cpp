@@ -243,19 +243,18 @@ FontImpl::FontImpl(const char* apPathFilename, unsigned int aPixelSize, unsigned
     mFont = hb_ft_font_create(mFace, 0);
 
     // Calculate actual font size
-    mPixelWidth = static_cast<unsigned int>(ceil((mFace->max_advance_width * mFace->size->metrics.y_ppem) /
+    mCacheSlotWidth = static_cast<unsigned int>(ceil((mFace->max_advance_width * mFace->size->metrics.y_ppem) /
                                                   static_cast<float>(mFace->units_per_EM)));
-    mPixelHeight = static_cast<unsigned int>(ceil((mFace->height * mFace->size->metrics.y_ppem) /
+    mCacheSlotHeight = static_cast<unsigned int>(ceil((mFace->height * mFace->size->metrics.y_ppem) /
                                                    static_cast<float>(mFace->units_per_EM)));
 
     std::cout << "FontImpl::FontImpl(" << apPathFilename << ", " << aPixelSize << "): "
-        << mPixelWidth << "x" << mPixelHeight << std::endl;
+        << mCacheSlotWidth << "x" << mCacheSlotHeight << std::endl;
 
     // TODO Calculate appropriate texture cache dimension
-    mCacheWidth = 7 * mPixelWidth;
-    mCacheHeigth = 7 * mPixelHeight;
+    mCacheWidth = 7 * mCacheSlotWidth;
+    mCacheHeigth = 7 * mCacheSlotHeight;
     mCacheSize = 7 * 7;
-    mCacheNbGlyps = 0;
     mCacheFreeSlotX = 0;
     mCacheFreeSlotY = 0;
 
@@ -329,28 +328,34 @@ void FontImpl::cache(const std::string& aCharacters) {
     unsigned len = hb_buffer_get_length(buffer);
     hb_glyph_info_t* glyphs = hb_buffer_get_glyph_infos(buffer, 0);
 //  hb_glyph_position_t* positions = hb_buffer_get_glyph_positions(buffer, 0);
+//  positions[0].x_advance;
+//  positions[0].x_offset;
 
     Program& program = Program::getInstance();
     glActiveTexture(GL_TEXTURE0 + program.mTextureUnit);
     glBindTexture(GL_TEXTURE_2D, mCacheTexture);
-
+    // Affects the unpacking of pixel data from memory. Specifies the alignment requirements
+    // for the start of each pixel row in memory; 1 for byte-alignment (See also GL_UNPACK_ROW_LENGTH).
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-
     GL_CHECK();
 
     // TODO
     for (unsigned i = 0; i < len; ++i) {
-        // TODO if (not in cache) {
-        unsigned int idxInCache = cache(glyphs[i].codepoint);
-        // }
+        // Is the glyph corresponding to the codepoint already in the cache ?
+        GlyphIdxMap::const_iterator iGlyph = mCacheGlyphIdxMap.find(glyphs[i].codepoint);
+        if (mCacheGlyphIdxMap.end() == iGlyph) {
+            // if not, render and add the glyph into the cache
+            unsigned int idxInCache = cache(glyphs[i].codepoint);
+        }
     }
 }
 
 // Pre-render and cache the glyph representing the given unicode Unicode codepoint.
 unsigned int FontImpl::cache(FT_UInt codepoint) {
-    unsigned int idxInCache = 0;
+    const unsigned int  idxInCache = mCacheGlyphIdxMap.size();
+    const FT_Bitmap& bitmap = mFace->glyph->bitmap;
 
-    // Render the glyph with Freetype
+    // Load and render the glyph into the glyph slot of a the face object
     FT_Error error;
     error = FT_Load_Glyph(mFace, codepoint, FT_LOAD_RENDER);
     if (error) {
@@ -358,35 +363,39 @@ unsigned int FontImpl::cache(FT_UInt codepoint) {
     }
 
     // TODO verification and calculation
-    int pitch = mFace->glyph->bitmap.pitch;
+    // The pitch is positive when the bitmap has a `down' flow, and negative when it has an `up' flow.
+    // In all cases, the pitch is an offset to add to a bitmap pointer in order to go down one row.
+    int pitch = bitmap.pitch;
     if (pitch < 0) {
         pitch = -pitch;
     }
+    // GL_UNPACK_ROW_LENGTH defines the number of pixels in a row
     glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch);
 
     std::cout << "FontImpl::cache(" << codepoint << "):"
-        << " width=" << mFace->glyph->bitmap.width
-        << " rows=" << mFace->glyph->bitmap.rows
-        << " pitch=" << pitch << " (" << mFace->glyph->bitmap.pitch << ")"
+        << " width=" << bitmap.width
+        << " rows=" << bitmap.rows
+        << " pitch=" << pitch << " (" << bitmap.pitch << ")"
+        << " advance.x=" << (mFace->glyph->advance.x >> 6)
         << "\n";
 
     // Load the newly rendered glyph into the texture cache
-    // TODO at the appropriate position
     glTexSubImage2D(
         GL_TEXTURE_2D, 0,
-        mCacheFreeSlotX, mCacheFreeSlotY, mFace->glyph->bitmap.width, mFace->glyph->bitmap.rows,
-        GL_RED, GL_UNSIGNED_BYTE, mFace->glyph->bitmap.buffer);
+        mCacheFreeSlotX, mCacheFreeSlotY, bitmap.width, bitmap.rows,
+        GL_RED, GL_UNSIGNED_BYTE, bitmap.buffer);
+    GL_CHECK();
 
     // TODO calculation of verticies and indicies
-    // TODO manage the cache
-    mCacheNbGlyps++;
-    mCacheFreeSlotX += mPixelWidth;
+
+    // Add the idx of the glyph into the map
+    mCacheGlyphIdxMap[codepoint] = idxInCache;
+    // TODO optimize the usage of cache texture; only use the space taken by the glyph
+    mCacheFreeSlotX += mCacheSlotWidth;
     if (mCacheWidth <= mCacheFreeSlotX) {
         mCacheFreeSlotX = 0;
-        mCacheFreeSlotY += mPixelHeight;
+        mCacheFreeSlotY += mCacheSlotHeight;
     }
-
-    GL_CHECK();
 
     return idxInCache;
 }
