@@ -27,6 +27,8 @@
 
 #include "glload.hpp"
 
+/// @{ No Doxygen comments
+
 #ifdef _WIN32
 static void* glPointer(const char* funcname) {
     return reinterpret_cast<void*>(wglGetProcAddress(funcname));
@@ -73,6 +75,8 @@ PFNGLGETSHADERINFOLOGPROC glGetShaderInfoLog;
 PFNGLGETPROGRAMIVPROC glGetProgramiv;
 PFNGLGETPROGRAMINFOLOGPROC glGetProgramInfoLog;
 PFNGLDETACHSHADERPROC glDetachShader;
+
+/// @}
 
 namespace glload {
 

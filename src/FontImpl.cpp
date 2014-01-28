@@ -28,11 +28,14 @@ struct GlyphVertex {
     GLfloat t;  ///< Texture t (y) coordinate
 };
 
+/// Size of the vertex data at the 4 corners of a glyph (a quad, or 2 triangles)
 #define GLYPH_VERT_SIZE (4*sizeof(GlyphVertex))
+/// Size of the 6 indices used to described the 2 triangles that compose a glyph
 #define GLYPH_IDX_SIZE (6*sizeof(GLushort))
 
+/// Source of the vertex shader used to scale the glyphs vertices
 static const char* _vertexShaderSource =
-"#version 130\n"
+"#version 330\n"
 "\n"
 "// Attributes (input data streams ; 2D vertex position and texture coordinates)\n"
 "layout(location = 0) in vec2 position;\n"
@@ -51,8 +54,9 @@ static const char* _vertexShaderSource =
 "    smoothTexCoord = texCoord;\n"
 "}\n";
 
+/// Source of the fragment shader used to draw the glyphs using the cache texture
 static const char* _fragmentShaderSource =
-"#version 130\n"
+"#version 330\n"
 "\n"
 "smooth in vec2 smoothTexCoord;\n"
 "\n"
@@ -68,10 +72,15 @@ static const char* _fragmentShaderSource =
 "    outputColor = vec4(color*textureIntensity, textureIntensity);\n"
 "}\n";
 
-
+/**
+ * @brief Check for any previous OpenGL error. Use with the GL_CHECK() macro
+ *
+ * @param[in] apFile    File where the check is done
+ * @param[in] aLine     Line where the check is called
+ */
 void checkOpenGlError(const char* apFile, int aLine) {
     GLenum error = glGetError();
-    while (GL_NO_ERROR != error) {
+    if (GL_NO_ERROR != error) {
         const char* pMsg = NULL;
         switch (error) {
             case GL_INVALID_ENUM:                   pMsg = "GL_INVALID_ENUM";                  break;
@@ -83,10 +92,10 @@ void checkOpenGlError(const char* apFile, int aLine) {
             case GL_STACK_OVERFLOW:                 pMsg = "GL_STACK_OVERFLOW";                break;
         }
         std::cerr << apFile << ":" << aLine << ": " << pMsg << std::endl;
-        error = glGetError();
     }
 }
-#define GL_CHECK() checkOpenGlError(__FILE__, __LINE__)
+/// Macro checking for any previous OpenGL error.
+#define GL_CHECK()  checkOpenGlError(__FILE__, __LINE__)
 
 
 /**
@@ -97,6 +106,8 @@ public:
     Program() :
         mTextureUnit(0) {
 
+        std::cout << "Program::Program()\n";
+
         // Load OpenGL 3 function pointers
         glload::initGlPointers();
 
@@ -105,7 +116,7 @@ public:
         GLuint mFragmentShader = compileShader(GL_FRAGMENT_SHADER, _fragmentShaderSource);
         mProgram = linkProgram(mVertexShader, mFragmentShader);
 
-        // Fetch Attribute (input data streams) and Unitform (variables) locations (ids)
+        // Fetch Attribute (input data streams) and Uniform (variables) locations (ids)
         glUseProgram(mProgram);
         mVertexPositionAttrib = glGetAttribLocation(mProgram, "position");
         mVertexTextureCoordAttrib = glGetAttribLocation(mProgram, "texCoord");
@@ -134,6 +145,8 @@ public:
     GLuint compileShader(GLenum aShaderType, const std::string& aShaderSource) const {
         const char *shaderSource = aShaderSource.c_str();
 
+        std::cout << "Program::compileShader(" << aShaderType << ")\n";
+
         // Create a shader, give it the source code, and compile it
         GLuint shader = glCreateShader(aShaderType);
         glShaderSource(shader, 1, &shaderSource, NULL);
@@ -161,6 +174,9 @@ public:
     /**
      * @brief Link the shaders into a program object
      *
+     * @param[in] aVertexShader     Source text of the vertex shader
+     * @param[in] aFragmentShader   Source text of the fragment shader
+     *
      * @return Id of the created program object
      *
      * @throw a std::exception in case of error (std::runtime_error)
@@ -172,7 +188,9 @@ public:
         glAttachShader(program, aFragmentShader);
         glLinkProgram(program);
 
-        // Check program status, and get error message if a problem occured
+        std::cout << "Program::linkProgram(" << aVertexShader << ", " << aFragmentShader << ")\n";
+
+        // Check program status, and get error message if a problem occurred
         GLint status;
         glGetProgramiv(program, GL_LINK_STATUS, &status);
         if (GL_FALSE == status) {
@@ -345,7 +363,7 @@ void FontImpl::cache(const std::string& aCharacters) {
         GlyphIdxMap::const_iterator iGlyph = mCacheGlyphIdxMap.find(glyphs[i].codepoint);
         if (mCacheGlyphIdxMap.end() == iGlyph) {
             // if not, render and add the glyph into the cache
-            unsigned int idxInCache = cache(glyphs[i].codepoint);
+            /* unsigned int idxInCache = */ cache(glyphs[i].codepoint);
         }
     }
 }
@@ -413,8 +431,8 @@ unsigned int FontImpl::cache(FT_UInt codepoint) {
 
     // Add the idx of the glyph into the map
     mCacheGlyphIdxMap[codepoint] = idxInCache;
-    
-    // TODO Add a 2 vectors for verticies and indicies
+
+    // TODO Add a 2 vectors for vertices and indices
 
     return idxInCache;
 }

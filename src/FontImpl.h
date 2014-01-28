@@ -81,6 +81,8 @@ private:
      * @brief Pre-render and cache the glyph representing the given unicode Unicode codepoint.
      *
      * @param[in] codepoint Unicode character codepoint.
+     *
+     * @return Index of the cached glyph
      */
     unsigned int cache(FT_UInt codepoint);
 
@@ -97,18 +99,18 @@ private:
     unsigned int    mCacheFreeSlotY;    ///< Y coordinate of next free slot on the cache texture.
     GlyphIdxMap     mCacheGlyphIdxMap;  ///< Association of codepoint/idx of the cached glyphs
 
-    FT_Face         mFace;              ///< Handle to the typographic face object (given typeface/font, in a given style).
+    FT_Face         mFace;              ///< Handle to typographic face object (given typeface/font, in a given style).
     hb_font_t*      mFont;              ///< Harfbuzz pointer to the freetype font, for text shaping
 
-    GLuint mCacheTexture;
+    GLuint mCacheTexture;               ///< 2D Texture used to cache the rendered glyphs, shared between multiple Text
     // For cache debug draw
-    GLuint mCacheVAO;
-    GLuint mCacheVBO;
-    GLuint mCacheIBO;
+    GLuint mCacheVAO;                   ///< Vertex Array Object used only for debug draw of the cache
+    GLuint mCacheVBO;                   ///< Vertex Buffer Object used only for debug draw of the cache
+    GLuint mCacheIBO;                   ///< Index Buffer Object used only for debug draw of the cache
     // TODO move these into TextImpl class
-    GLuint mTextVAO;
-    GLuint mTextVBO;
-    GLuint mTextIBO;
+    GLuint mTextVAO;                    ///< Vertex Array Object used to render a text
+    GLuint mTextVBO;                    ///< Vertex Buffer Object used to render a text
+    GLuint mTextIBO;                    ///< Index Buffer Object used to render a text
 };
 
 } // namespace gltext
