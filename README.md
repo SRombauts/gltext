@@ -12,7 +12,11 @@ or copy at http://opensource.org/licenses/MIT)
 
 ### Getting and Building the dependencies
 
-TODO
+1. Get the development libraries under Linux :
+
+```bash
+sudo apt-get install libxrandr-dev libxi-dev libgl1-mesa-dev mesa-common-dev
+```
 
 ### Building the application
 
