@@ -13,6 +13,7 @@
 
 #include <string>
 #include <map>
+#include <vector>
 
 #include <hb-ft.h>  // HarfBuzz Freetype interface
 
@@ -90,8 +91,43 @@ private:
     unsigned int cache(FT_UInt codepoint);
 
 private:
+    /// Data of one of four glyph vertex
+    struct GlyphVertex {
+        GLfloat x;  ///< Vertex x coordinate
+        GLfloat y;  ///< Vertex y coordinate
+        GLfloat s;  ///< Texture s (x) coordinate
+        GLfloat t;  ///< Texture t (y) coordinate
+    };
+
+    /// Vertex and texture coordinates of the 4 corners of a glyph (that is, a quad, or 2 triangles)
+    struct GlyphVerticies {
+        GlyphVertex bl; ///< Vertex data of the Bottom Left corner
+        GlyphVertex br; ///< Vertex data of the Bottom Right corner
+        GlyphVertex tl; ///< Vertex data of the Top Left corner
+        GlyphVertex tr; ///< Vertex data of the Top Right corner
+    };
+
+    /// Corresponding 6 indices used to described the 2 triangles that compose a glyph
+    // TODO This should be filled automatically by an algorithme
+    struct GlyphIndices {
+        GLushort bl1;   ///< Index 0 of the vertex in the Bottom Left corner (first triangle)
+        GLushort br1;   ///< Index 1 of the vertex in the Bottom Right corner (first triangle)
+        GLushort tl1;   ///< Index 2 of the vertex in the Top Left corner (first triangle)
+        GLushort br2;   ///< Index 1 of the vertex in the Bottom Right corner (second triangle)
+        GLushort tr2;   ///< Index 2 of the vertex in the Top Right corner (second triangle)
+        GLushort tl2;   ///< Index 3 of the vertex in the Top Left corner (second triangle)
+    };
+
+    /// Cache data (vertex and texture coordinates, and corresponding indices for each glyph)
+    struct GlyphData {
+        GlyphVerticies  vertices;   ///< Vertex and texture coordinates of the 4 corners of a glyph (in 2 triangles)
+        GlyphIndices    indices;    ///< Corresponding 6 indices used to described the 2 triangles that compose a glyph
+    };
+
     /// Association of codepoint/idx of the cached glyphs
     typedef std::map<FT_UInt, unsigned long>    GlyphIdxMap;
+    /// Map of cached data (vertex and texture coordinates, and corresponding indices for each glyph)
+    typedef std::vector<GlyphData>              GlyphDataMap;
 
 private:
     std::string     mPathFilename;      ///< Path to the OpenType font file to open with Freetype.

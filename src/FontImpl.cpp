@@ -18,20 +18,6 @@
 #include <string>
 #include <iostream>     // NOLINT TODO
 
-/**
- * @brief Data of each glyph vertex
- */
-struct GlyphVertex {
-    GLfloat x;  ///< Vertex x coordinate
-    GLfloat y;  ///< Vertex y coordinate
-    GLfloat s;  ///< Texture s (x) coordinate
-    GLfloat t;  ///< Texture t (y) coordinate
-};
-
-/// Size of the vertex data at the 4 corners of a glyph (a quad, or 2 triangles)
-#define GLYPH_VERT_SIZE (4*sizeof(GlyphVertex))
-/// Size of the 6 indices used to described the 2 triangles that compose a glyph
-#define GLYPH_IDX_SIZE (6*sizeof(GLushort))
 
 /// Source of the vertex shader used to scale the glyphs vertices
 static const char* _vertexShaderSource =
@@ -282,27 +268,35 @@ FontImpl::FontImpl(const char* apPathFilename, unsigned int aPixelSize, unsigned
     // 3 - 2
     // | / |
     // 0 - 1 -> x/s
-    GlyphVertex corners[4];
-    corners[0].x = -1.0f;
-    corners[0].y = -1.0f;
-    corners[0].s = 0.0f;
-    corners[0].t = 1.0f;
+    GlyphData glyphData;
 
-    corners[1].x = 1.0f;
-    corners[1].y = -1.0f;
-    corners[1].s = 1.0f;
-    corners[1].t = 1.0f;
+    glyphData.vertices.bl.x = -1.0f;
+    glyphData.vertices.bl.y = -1.0f;
+    glyphData.vertices.bl.s = 0.0f;
+    glyphData.vertices.bl.t = 1.0f;
 
-    corners[2].x = 1.0f;
-    corners[2].y = 1.0f;
-    corners[2].s = 1.0f;
-    corners[2].t = 0.0f;
+    glyphData.vertices.br.x = 1.0f;
+    glyphData.vertices.br.y = -1.0f;
+    glyphData.vertices.br.s = 1.0f;
+    glyphData.vertices.br.t = 1.0f;
 
-    corners[3].x = -1.0f;
-    corners[3].y = 1.0f;
-    corners[3].s = 0.0f;
-    corners[3].t = 0.0f;
-    unsigned short indices[6] = {0, 1, 2,  2, 3, 0};
+    glyphData.vertices.tl.x = -1.0f;
+    glyphData.vertices.tl.y = 1.0f;
+    glyphData.vertices.tl.s = 0.0f;
+    glyphData.vertices.tl.t = 0.0f;
+
+    glyphData.vertices.tr.x = 1.0f;
+    glyphData.vertices.tr.y = 1.0f;
+    glyphData.vertices.tr.s = 1.0f;
+    glyphData.vertices.tr.t = 0.0f;
+
+    // TODO This should be filled automatically by an algorithme
+    glyphData.indices.bl1 = 0;
+    glyphData.indices.br1 = 1;
+    glyphData.indices.tl1 = 2;
+    glyphData.indices.br2 = 1;
+    glyphData.indices.tl2 = 2;
+    glyphData.indices.tr2 = 3;
 
     glGenVertexArrays(1, &mCacheVAO);
     glGenBuffers(1, &mCacheVBO);
@@ -310,8 +304,8 @@ FontImpl::FontImpl(const char* apPathFilename, unsigned int aPixelSize, unsigned
     glBindVertexArray(mCacheVAO);
     glBindBuffer(GL_ARRAY_BUFFER, mCacheVBO);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mCacheIBO);
-    glBufferData(GL_ARRAY_BUFFER, GLYPH_VERT_SIZE, corners, GL_STATIC_DRAW);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, GLYPH_IDX_SIZE, indices, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER,         sizeof(glyphData.vertices), &(glyphData.vertices), GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(glyphData.indices),  &(glyphData.indices), GL_STATIC_DRAW);
     glEnableVertexAttribArray(program.mVertexPositionAttrib);
     glEnableVertexAttribArray(program.mVertexTextureCoordAttrib);
     glVertexAttribPointer(program.mVertexPositionAttrib, 2, GL_FLOAT, GL_FALSE, sizeof(GlyphVertex), 0);
@@ -326,8 +320,8 @@ FontImpl::FontImpl(const char* apPathFilename, unsigned int aPixelSize, unsigned
     glBindVertexArray(mTextVAO);
     glBindBuffer(GL_ARRAY_BUFFER, mTextVBO);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mTextIBO);
-    glBufferData(GL_ARRAY_BUFFER, TextLength * GLYPH_VERT_SIZE, NULL, GL_DYNAMIC_DRAW);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, TextLength * GLYPH_IDX_SIZE, NULL, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, TextLength * sizeof(GlyphVerticies), NULL, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, TextLength * sizeof(GlyphIndices), NULL, GL_DYNAMIC_DRAW);
     glEnableVertexAttribArray(program.mVertexPositionAttrib);
     glEnableVertexAttribArray(program.mVertexTextureCoordAttrib);
     glVertexAttribPointer(program.mVertexPositionAttrib, 2, GL_FLOAT, GL_FALSE, sizeof(GlyphVertex), 0);
