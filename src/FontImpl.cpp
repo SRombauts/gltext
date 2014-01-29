@@ -277,14 +277,41 @@ FontImpl::FontImpl(const char* apPathFilename, unsigned int aPixelSize, unsigned
         << " (cache " << mCacheWidth << "x" << mCacheHeight << ")" << std::endl;
 
     // For cache debug draw
+    // ^ y/t
+    // |
+    // 3 - 2
+    // | / |
+    // 0 - 1 -> x/s
+    GlyphVertex corners[4];
+    corners[0].x = -1.0f;
+    corners[0].y = -1.0f;
+    corners[0].s = 0.0f;
+    corners[0].t = 1.0f;
+
+    corners[1].x = 1.0f;
+    corners[1].y = -1.0f;
+    corners[1].s = 1.0f;
+    corners[1].t = 1.0f;
+
+    corners[2].x = 1.0f;
+    corners[2].y = 1.0f;
+    corners[2].s = 1.0f;
+    corners[2].t = 0.0f;
+
+    corners[3].x = -1.0f;
+    corners[3].y = 1.0f;
+    corners[3].s = 0.0f;
+    corners[3].t = 0.0f;
+    unsigned short indices[6] = {0, 1, 2,  2, 3, 0};
+
     glGenVertexArrays(1, &mCacheVAO);
     glGenBuffers(1, &mCacheVBO);
     glGenBuffers(1, &mCacheIBO);
     glBindVertexArray(mCacheVAO);
     glBindBuffer(GL_ARRAY_BUFFER, mCacheVBO);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mCacheIBO);
-    glBufferData(GL_ARRAY_BUFFER, GLYPH_VERT_SIZE, NULL, GL_DYNAMIC_DRAW);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, GLYPH_IDX_SIZE, NULL, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, GLYPH_VERT_SIZE, corners, GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, GLYPH_IDX_SIZE, indices, GL_STATIC_DRAW);
     glEnableVertexAttribArray(program.mVertexPositionAttrib);
     glEnableVertexAttribArray(program.mVertexTextureCoordAttrib);
     glVertexAttribPointer(program.mVertexPositionAttrib, 2, GL_FLOAT, GL_FALSE, sizeof(GlyphVertex), 0);
@@ -432,7 +459,7 @@ unsigned int FontImpl::cache(FT_UInt codepoint) {
     // Add the idx of the glyph into the map
     mCacheGlyphIdxMap[codepoint] = idxInCache;
 
-    // TODO Add a 2 vectors for vertices and indices
+    // TODO Add 2 vectors for vertices and indices
 
     return idxInCache;
 }
@@ -443,41 +470,19 @@ Text FontImpl::render(const std::string& aCharacters, const std::shared_ptr<cons
 }
 
 // Draw the cache texture for debug purpose.
-void FontImpl::drawCache(float aX, float aY, float aW, float aH) {
+void FontImpl::drawCache(float aOffsetX, float aOffsetY, float aScaleX, float aScaleY) {
     static bool bFirst = true;
     if (bFirst) {
         std::cout << "FontImpl::drawCache()\n";
         bFirst = false;
     }
-    // TODO
-    // ^ y/t
-    // |
-    // 3 - 2
-    // | / |
-    // 0 - 1 -> x/s
-    GlyphVertex corners[4];
-    corners[0].x = aX;
-    corners[0].y = aY;
-    corners[0].s = 0.0f;
-    corners[0].t = 1.0f;
-
-    corners[1].x = aX + aW;
-    corners[1].y = aY;
-    corners[1].s = 1.0f;
-    corners[1].t = 1.0f;
-
-    corners[2].x = aX + aW;
-    corners[2].y = aY + aH;
-    corners[2].s = 1.0f;
-    corners[2].t = 0.0f;
-
-    corners[3].x = aX;
-    corners[3].y = aY + aH;
-    corners[3].s = 0.0f;
-    corners[3].t = 0.0f;
-    unsigned short indices[6] = {0, 1, 2,  2, 3, 0};
 
     Program& program = Program::getInstance();
+    glUseProgram(program.mProgram);
+
+    glUniform2f(program.mOffsetUnif, aOffsetX, aOffsetY);
+    glUniform2f(program.mScaleUnif, aScaleX, aScaleY);
+    glUniform3f(program.mColorUnif, 1.0f, 1.0f, 0.0f);
 
     glActiveTexture(GL_TEXTURE0 + program.mTextureUnit);
     glBindTexture(GL_TEXTURE_2D, mCacheTexture);
@@ -485,15 +490,7 @@ void FontImpl::drawCache(float aX, float aY, float aW, float aH) {
     if (glBindSampler) {
         glBindSampler(0, 0);
     }
-    glUseProgram(program.mProgram);
-    // TODO use real values
-    glUniform2f(program.mScaleUnif, 2/640.0f, 2/480.0f);
-    glUniform2f(program.mOffsetUnif, 0, 0);
-    glUniform3f(program.mColorUnif, 1.0f, 1.0f, 0.0f);
-
-    glBindVertexArray(mTextVAO);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, GLYPH_VERT_SIZE, corners);
-    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, GLYPH_IDX_SIZE, indices);
+    glBindVertexArray(mCacheVAO);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
 }
 

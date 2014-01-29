@@ -69,12 +69,15 @@ public:
     /**
      * @brief Draw the cache texture for debug purpose.
      *
-     * @param[in] aX    X coordinate of where to start drawing the texture.
-     * @param[in] aY    Y coordinate of where to start drawing the texture.
-     * @param[in] aW    Width of the area to draw the texture.
-     * @param[in] aH    Height of the area to draw the texture.
+     * @param[in] aOffsetX  X offset of where to start drawing the texture.
+     * @param[in] aOffsetY  Y offset of where to start drawing the texture.
+     * @param[in] aScaleX   Scale the width of the area to draw the texture.
+     * @param[in] aScaleY   Scale the height of the area to draw the texture.
+     *
+     * @todo use glm::vec2
+     * @todo add color
      */
-    void drawCache(float aX, float aY, float aW, float aH);
+    void drawCache(float aOffsetX, float aOffsetY, float aScaleX, float aScaleY);
 
 private:
     /**
