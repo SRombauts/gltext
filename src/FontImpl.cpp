@@ -265,38 +265,39 @@ FontImpl::FontImpl(const char* apPathFilename, unsigned int aPixelSize, unsigned
     // For cache debug draw
     // ^ y/t
     // |
-    // 3 - 2
-    // | / |
+    // 2 - 3
+    // | \ |
     // 0 - 1 -> x/s
-    GlyphData glyphData;
+    GlyphVerticies glyphVerticies;
 
-    glyphData.vertices.bl.x = -1.0f;
-    glyphData.vertices.bl.y = -1.0f;
-    glyphData.vertices.bl.s = 0.0f;
-    glyphData.vertices.bl.t = 1.0f;
+    glyphVerticies.bl.x = -1.0f;
+    glyphVerticies.bl.y = -1.0f;
+    glyphVerticies.bl.s = 0.0f;
+    glyphVerticies.bl.t = 1.0f;
 
-    glyphData.vertices.br.x = 1.0f;
-    glyphData.vertices.br.y = -1.0f;
-    glyphData.vertices.br.s = 1.0f;
-    glyphData.vertices.br.t = 1.0f;
+    glyphVerticies.br.x = 1.0f;
+    glyphVerticies.br.y = -1.0f;
+    glyphVerticies.br.s = 1.0f;
+    glyphVerticies.br.t = 1.0f;
 
-    glyphData.vertices.tl.x = -1.0f;
-    glyphData.vertices.tl.y = 1.0f;
-    glyphData.vertices.tl.s = 0.0f;
-    glyphData.vertices.tl.t = 0.0f;
+    glyphVerticies.tl.x = -1.0f;
+    glyphVerticies.tl.y = 1.0f;
+    glyphVerticies.tl.s = 0.0f;
+    glyphVerticies.tl.t = 0.0f;
 
-    glyphData.vertices.tr.x = 1.0f;
-    glyphData.vertices.tr.y = 1.0f;
-    glyphData.vertices.tr.s = 1.0f;
-    glyphData.vertices.tr.t = 0.0f;
+    glyphVerticies.tr.x = 1.0f;
+    glyphVerticies.tr.y = 1.0f;
+    glyphVerticies.tr.s = 1.0f;
+    glyphVerticies.tr.t = 0.0f;
 
-    // TODO This should be filled automatically by an algorithme
-    glyphData.indices.bl1 = 0;
-    glyphData.indices.br1 = 1;
-    glyphData.indices.tl1 = 2;
-    glyphData.indices.br2 = 1;
-    glyphData.indices.tl2 = 2;
-    glyphData.indices.tr2 = 3;
+    // TODO This should be filled automatically by an algorithm
+    GlyphIndices glyphIndicies;
+    glyphIndicies.bl1 = 0;
+    glyphIndicies.br1 = 1;
+    glyphIndicies.tl1 = 2;
+    glyphIndicies.br2 = 1;
+    glyphIndicies.tl2 = 2;
+    glyphIndicies.tr2 = 3;
 
     glGenVertexArrays(1, &mCacheVAO);
     glGenBuffers(1, &mCacheVBO);
@@ -304,8 +305,8 @@ FontImpl::FontImpl(const char* apPathFilename, unsigned int aPixelSize, unsigned
     glBindVertexArray(mCacheVAO);
     glBindBuffer(GL_ARRAY_BUFFER, mCacheVBO);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mCacheIBO);
-    glBufferData(GL_ARRAY_BUFFER,         sizeof(glyphData.vertices), &(glyphData.vertices), GL_STATIC_DRAW);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(glyphData.indices),  &(glyphData.indices), GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER,         sizeof(glyphVerticies), &(glyphVerticies), GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(glyphIndicies),  &(glyphIndicies), GL_STATIC_DRAW);
     glEnableVertexAttribArray(program.mVertexPositionAttrib);
     glEnableVertexAttribArray(program.mVertexTextureCoordAttrib);
     glVertexAttribPointer(program.mVertexPositionAttrib, 2, GL_FLOAT, GL_FALSE, sizeof(GlyphVertex), 0);
@@ -438,7 +439,43 @@ unsigned int FontImpl::cache(FT_UInt codepoint) {
         GL_RED, GL_UNSIGNED_BYTE, bitmap.buffer);
     GL_CHECK();
 
-    // Increase height of the current row if needed
+    // ^ y/t
+    // |
+    // 2 - 3
+    // | \ |
+    // 0 - 1 -> x/s
+    GlyphVerticies glyphVerticies;
+
+    unsigned int offsetX = mFace->glyph->bitmap_left;
+    unsigned int offsetY = mFace->glyph->bitmap_top - bitmap.rows;
+
+    glyphVerticies.bl.x = offsetX; // TODO SRO : scale ?
+    glyphVerticies.bl.y = offsetY;
+    glyphVerticies.bl.s = mCacheFreeSlotX/static_cast<float>(mCacheWidth);
+    glyphVerticies.bl.t = (mCacheFreeSlotY + bitmap.rows)/static_cast<float>(mCacheHeight);
+
+    glyphVerticies.br.x = offsetX + bitmap.width;
+    glyphVerticies.br.y = offsetY;
+    glyphVerticies.br.s = (mCacheFreeSlotX + bitmap.width)/static_cast<float>(mCacheWidth);
+    glyphVerticies.br.t = (mCacheFreeSlotY + bitmap.rows)/static_cast<float>(mCacheHeight);
+
+    glyphVerticies.tl.x = offsetX;
+    glyphVerticies.tl.y = offsetY + bitmap.rows;
+    glyphVerticies.tl.s = mCacheFreeSlotX/static_cast<float>(mCacheWidth);
+    glyphVerticies.tl.t = mCacheFreeSlotY/static_cast<float>(mCacheHeight);
+
+    glyphVerticies.tr.x = offsetX + bitmap.width;
+    glyphVerticies.tr.y = offsetY + bitmap.rows;
+    glyphVerticies.tr.s = (mCacheFreeSlotX + bitmap.width)/static_cast<float>(mCacheWidth);
+    glyphVerticies.tr.t = mCacheFreeSlotY/static_cast<float>(mCacheHeight);
+
+    // Cache vertices and indices into a vector (that is, by index of insertion)
+    mCacheGlyphVertList.push_back(glyphVerticies);
+    // Add the index of the glyph into the map
+    mCacheGlyphIdxMap[codepoint] = idxInCache;
+
+
+    // Recalculate height of the current row based on height of the new Glyph
     if (bitmap.rows > static_cast<int>(mCacheLineHeight)) {
         mCacheLineHeight = bitmap.rows;
     }
@@ -449,11 +486,6 @@ unsigned int FontImpl::cache(FT_UInt codepoint) {
         mCacheFreeSlotX = 0;
         mCacheLineHeight = 0;
     }
-
-    // Add the idx of the glyph into the map
-    mCacheGlyphIdxMap[codepoint] = idxInCache;
-
-    // TODO Add 2 vectors for vertices and indices
 
     return idxInCache;
 }

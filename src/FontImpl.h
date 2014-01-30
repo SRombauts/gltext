@@ -108,7 +108,7 @@ private:
     };
 
     /// Corresponding 6 indices used to described the 2 triangles that compose a glyph
-    // TODO This should be filled automatically by an algorithme
+    // TODO This should be filled automatically by an algorithm
     struct GlyphIndices {
         GLushort bl1;   ///< Index 0 of the vertex in the Bottom Left corner (first triangle)
         GLushort br1;   ///< Index 1 of the vertex in the Bottom Right corner (first triangle)
@@ -118,16 +118,12 @@ private:
         GLushort tl2;   ///< Index 3 of the vertex in the Top Left corner (second triangle)
     };
 
-    /// Cache data (vertex and texture coordinates, and corresponding indices for each glyph)
-    struct GlyphData {
-        GlyphVerticies  vertices;   ///< Vertex and texture coordinates of the 4 corners of a glyph (in 2 triangles)
-        GlyphIndices    indices;    ///< Corresponding 6 indices used to described the 2 triangles that compose a glyph
-    };
-
     /// Association of codepoint/idx of the cached glyphs
     typedef std::map<FT_UInt, unsigned long>    GlyphIdxMap;
-    /// Map of cached data (vertex and texture coordinates, and corresponding indices for each glyph)
-    typedef std::vector<GlyphData>              GlyphDataMap;
+    /// Vector of cached vertex and texture coordinates for each glyph
+    typedef std::vector<GlyphVerticies>         GlyphVertVector;
+    /// Vector of cached indices for each glyph
+    typedef std::vector<GlyphIndices>           GlyphIdxVector;
 
 private:
     std::string     mPathFilename;      ///< Path to the OpenType font file to open with Freetype.
@@ -137,6 +133,7 @@ private:
     unsigned int    mCacheFreeSlotX;    ///< X coordinate of next free slot on the cache texture.
     unsigned int    mCacheFreeSlotY;    ///< Y coordinate of next free slot on the cache texture.
     GlyphIdxMap     mCacheGlyphIdxMap;  ///< Association of codepoint/idx of the cached glyphs
+    GlyphVertVector mCacheGlyphVertList; ///< List of cached data (vertex and texture coordinates, and indices)
 
     FT_Face         mFace;              ///< Handle to typographic face object (given typeface/font, in a given style).
     hb_font_t*      mFont;              ///< Harfbuzz pointer to the freetype font, for text shaping
