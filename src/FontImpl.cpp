@@ -58,6 +58,9 @@ static const char* _fragmentShaderSource =
 "    outputColor = vec4(color*textureIntensity, textureIntensity);\n"
 "}\n";
 
+static const GLuint _TextureUnitId = 0;   ///< Id of the texture image unit to use (0)
+
+
 /**
  * @brief Check for any previous OpenGL error. Use with the GL_CHECK() macro
  *
@@ -89,9 +92,7 @@ void checkOpenGlError(const char* apFile, int aLine) {
  */
 class Program {
 public:
-    Program() :
-        mTextureUnit(0) {
-
+    Program() {
         std::cout << "Program::Program()\n";
 
         // Load OpenGL 3 function pointers
@@ -110,7 +111,7 @@ public:
         mOffsetUnif = glGetUniformLocation(mProgram, "offset");
         mColorUnif = glGetUniformLocation(mProgram, "color");
         GLuint textureCacheUnif = glGetUniformLocation(mProgram, "textureCache");
-        glUniform1i(textureCacheUnif, mTextureUnit);
+        glUniform1i(textureCacheUnif, _TextureUnitId);
         GL_CHECK();
     }
 
@@ -212,8 +213,6 @@ public:
     }
 
 public:
-    const GLuint mTextureUnit;          ///< id of the texture image unit (0)
-
     GLuint mProgram;                    ///< program linked of a vertex and a fragment shader
     GLuint mVertexPositionAttrib;       ///< vertex position
     GLuint mVertexTextureCoordAttrib;   ///< texture coordinate
@@ -227,10 +226,9 @@ public:
 namespace gltext {
 
 // Ask Freetype to open a Font file and initialize it with the given size
-FontImpl::FontImpl(const char* apPathFilename, unsigned int aPixelSize, unsigned int aCacheSize) :
+FontImpl::FontImpl(const char* apPathFilename, size_t aPixelSize, size_t aCacheSize) :
     mPathFilename(apPathFilename) {
     Freetype& freetype = Freetype::getInstance();
-    Program& program = Program::getInstance();
     // Load the font from file
     FT_Error error = FT_New_Face(freetype.getLibrary(), mPathFilename.c_str(), 0, &mFace);
     if (error) {
@@ -246,9 +244,9 @@ FontImpl::FontImpl(const char* apPathFilename, unsigned int aPixelSize, unsigned
     mFont = hb_ft_font_create(mFace, 0);
 
     // Calculate actual font size
-    unsigned long maxSlotWidth = static_cast<unsigned int>(
+    size_t maxSlotWidth = static_cast<size_t>(
         ceil((mFace->max_advance_width * mFace->size->metrics.y_ppem) / static_cast<float>(mFace->units_per_EM)));
-    unsigned long maxSlotHeight = static_cast<unsigned int>(
+    size_t maxSlotHeight = static_cast<size_t>(
         ceil((mFace->height * mFace->size->metrics.y_ppem) / static_cast<float>(mFace->units_per_EM)));
 
     // TODO Calculate appropriate texture cache dimension from aCacheSize => use the Next Power Of Two (NPOT)
@@ -290,7 +288,6 @@ FontImpl::FontImpl(const char* apPathFilename, unsigned int aPixelSize, unsigned
     glyphVerticies.tr.s = 1.0f;
     glyphVerticies.tr.t = 0.0f;
 
-    // TODO This should be filled automatically by an algorithm
     GlyphIndices glyphIndicies;
     glyphIndicies.bl1 = 0;
     glyphIndicies.br1 = 1;
@@ -299,6 +296,8 @@ FontImpl::FontImpl(const char* apPathFilename, unsigned int aPixelSize, unsigned
     glyphIndicies.tl2 = 2;
     glyphIndicies.tr2 = 3;
 
+    Program& program = Program::getInstance();
+    glUseProgram(program.mProgram);
     glGenVertexArrays(1, &mCacheVAO);
     glGenBuffers(1, &mCacheVBO);
     glGenBuffers(1, &mCacheIBO);
@@ -314,7 +313,7 @@ FontImpl::FontImpl(const char* apPathFilename, unsigned int aPixelSize, unsigned
     GL_CHECK();
 
     // Cache texture
-    glActiveTexture(GL_TEXTURE0 + program.mTextureUnit);
+    glActiveTexture(GL_TEXTURE0 + _TextureUnitId);
     glGenTextures(1, &mCacheTexture);
     glBindTexture(GL_TEXTURE_2D, mCacheTexture);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, mCacheWidth, mCacheHeight, 0, GL_RED, GL_UNSIGNED_BYTE, NULL);
@@ -349,11 +348,11 @@ void FontImpl::cache(const std::string& aCharacters) {
     hb_shape(mFont, buffer, NULL, 0);
 
     // Get buffer properties
-    unsigned textLength = hb_buffer_get_length(buffer);
+    size_t textLength = hb_buffer_get_length(buffer);
     hb_glyph_info_t* glyphs = hb_buffer_get_glyph_infos(buffer, 0);
 
-    Program& program = Program::getInstance();
-    glActiveTexture(GL_TEXTURE0 + program.mTextureUnit);
+    // Cache texture, used to render & cache characters
+    glActiveTexture(GL_TEXTURE0 + _TextureUnitId);
     glBindTexture(GL_TEXTURE_2D, mCacheTexture);
     // Affects the unpacking of pixel data from memory. Specifies the alignment requirements
     // for the start of each pixel row in memory; 1 for byte-alignment (See also GL_UNPACK_ROW_LENGTH).
@@ -361,7 +360,7 @@ void FontImpl::cache(const std::string& aCharacters) {
     GL_CHECK();
 
     // Iterate over the glyphs of the text
-    for (unsigned i = 0; i < textLength; ++i) {
+    for (size_t i = 0; i < textLength; ++i) {
         // Is the glyph corresponding to the codepoint already in the cache ?
         GlyphIdxMap::const_iterator iGlyph = mCacheGlyphIdxMap.find(glyphs[i].codepoint);
         if (mCacheGlyphIdxMap.end() == iGlyph) {
@@ -372,8 +371,8 @@ void FontImpl::cache(const std::string& aCharacters) {
 }
 
 // Pre-render and cache the glyph representing the given unicode Unicode codepoint.
-unsigned int FontImpl::cache(FT_UInt codepoint) {
-    const unsigned int  idxInCache = mCacheGlyphIdxMap.size();
+size_t FontImpl::cache(FT_UInt codepoint) {
+    const size_t idxInCache = mCacheGlyphIdxMap.size();
     const FT_Bitmap& bitmap = mFace->glyph->bitmap;
 
     // Load and render the glyph into the glyph slot of a the face object
@@ -388,7 +387,7 @@ unsigned int FontImpl::cache(FT_UInt codepoint) {
     // Does the free slot is wide enough to hold the new glyph ?
     if (mCacheWidth <= mCacheFreeSlotX + bitmap.width) {
         // else start with the next line
-        mCacheFreeSlotY += mCacheLineHeight;
+        mCacheFreeSlotY += mCacheLineHeight + 1; // One pixel row of separation (needed for linear filtering)
         mCacheFreeSlotX = 0;
         mCacheLineHeight = 0;
     }
@@ -410,7 +409,7 @@ unsigned int FontImpl::cache(FT_UInt codepoint) {
         << " width=" << bitmap.width
         << " rows=" << bitmap.rows
         << " pitch=" << pitch << " (" << bitmap.pitch << ")"
-        << " advance.x=" << (mFace->glyph->advance.x >> 6)
+        << " advance.x=" << (mFace->glyph->advance.x >> 6) // ">> 6" is standard freetype formulae
         << "\n";
 
     // Load the newly rendered glyph into the texture cache
@@ -427,10 +426,10 @@ unsigned int FontImpl::cache(FT_UInt codepoint) {
     // 0 - 1 -> x/s
     GlyphVerticies glyphVerticies;
 
-    unsigned int offsetX = mFace->glyph->bitmap_left;
-    unsigned int offsetY = mFace->glyph->bitmap_top - bitmap.rows;
+    int offsetX = mFace->glyph->bitmap_left;
+    int offsetY = mFace->glyph->bitmap_top - bitmap.rows; // TODO SRO : negative !? (-1)
 
-    glyphVerticies.bl.x = static_cast<float>(offsetX); // TODO SRO : scale ?
+    glyphVerticies.bl.x = static_cast<float>(offsetX);
     glyphVerticies.bl.y = static_cast<float>(offsetY);
     glyphVerticies.bl.s = mCacheFreeSlotX/static_cast<float>(mCacheWidth);
     glyphVerticies.bl.t = (mCacheFreeSlotY + bitmap.rows)/static_cast<float>(mCacheHeight);
@@ -461,7 +460,7 @@ unsigned int FontImpl::cache(FT_UInt codepoint) {
         mCacheLineHeight = bitmap.rows;
     }
     // Optimize the usage of cache texture; only use the space taken by the glyph
-    mCacheFreeSlotX += bitmap.width;
+    mCacheFreeSlotX += bitmap.width + 1; // One pixel column of separation (needed for linear filtering)
     if (mCacheWidth <= mCacheFreeSlotX) {
         mCacheFreeSlotY += mCacheLineHeight;
         mCacheFreeSlotX = 0;
@@ -471,9 +470,13 @@ unsigned int FontImpl::cache(FT_UInt codepoint) {
     return idxInCache;
 }
 
+
+// TODO : for debug only
+static size_t _textLength = 0;
+
 // Render the given string of characters (or use existing cached glyphs) and put it on a VAO/VBO.
 Text FontImpl::render(const std::string& aCharacters, const std::shared_ptr<const FontImpl>& aFontImplPtr) {
-    std::cout << "FontImpl::cache(" << aCharacters << ")\n";
+    std::cout << "FontImpl::render(" << aCharacters << ")\n";
 
     // Put the provided UTF-8 encoded characters into a Harfbuzz buffer
     hb_buffer_t* buffer = hb_buffer_create();
@@ -483,13 +486,12 @@ Text FontImpl::render(const std::string& aCharacters, const std::shared_ptr<cons
     hb_shape(mFont, buffer, NULL, 0);
 
     // Get buffer properties
-    unsigned textLength = hb_buffer_get_length(buffer);
+    size_t textLength = hb_buffer_get_length(buffer);
     hb_glyph_info_t* glyphs = hb_buffer_get_glyph_infos(buffer, 0);
     hb_glyph_position_t* positions = hb_buffer_get_glyph_positions(buffer, 0);
 
-    Program& program = Program::getInstance();
     // Cache texture, used only to render & cache new characters
-    glActiveTexture(GL_TEXTURE0 + program.mTextureUnit);
+    glActiveTexture(GL_TEXTURE0 + _TextureUnitId);
     glBindTexture(GL_TEXTURE_2D, mCacheTexture);
     // Affects the unpacking of pixel data from memory. Specifies the alignment requirements
     // for the start of each pixel row in memory; 1 for byte-alignment (See also GL_UNPACK_ROW_LENGTH).
@@ -500,42 +502,77 @@ Text FontImpl::render(const std::string& aCharacters, const std::shared_ptr<cons
     GlyphVertVector vertVector(textLength);
     GlyphIdxVector  idxVector(textLength);
 
+    size_t positionX = 0;
+    size_t positionY = 0;
+
     // Iterate over the glyphs of the text
-    for (unsigned i = 0; i < textLength; ++i) {
+    for (size_t i = 0; i < textLength; ++i) {
+        size_t idxInCache;
+
         // Is the glyph corresponding to the codepoint already in the cache ?
         GlyphIdxMap::const_iterator iGlyph = mCacheGlyphIdxMap.find(glyphs[i].codepoint);
-        if (mCacheGlyphIdxMap.end() == iGlyph) {
-            // if not, render and add the glyph into the cache
-            unsigned int idxInCache = cache(glyphs[i].codepoint);
-
-            // TODO use cache to fill a VBO and a VBI, and a VAO
-            // TODO use x_advance and x_offset to offset vertex data (see below)
-            vertVector[i].bl.x = mCacheGlyphVertList[idxInCache].bl.x; // TODO + positions[0].x_advance; ?
-            vertVector[i].bl.y = mCacheGlyphVertList[idxInCache].bl.y;
-            vertVector[i].bl.s = mCacheGlyphVertList[idxInCache].bl.s;
-            vertVector[i].bl.t = mCacheGlyphVertList[idxInCache].bl.t;
-            // TODO Continue with other corners ...
-
-            positions[0].x_advance;
-            positions[0].x_offset;
+        if (mCacheGlyphIdxMap.end() != iGlyph) {
+            // if already in cache, get its index
+            idxInCache = iGlyph->second;
+        } else {
+            // if not, render and add the glyph into the cache, then get its index
+            idxInCache = cache(glyphs[i].codepoint);
         }
+
+        // Use cache to fill a VBO and a VBI, and a VAO
+        vertVector[i].bl.x = mCacheGlyphVertList[idxInCache].bl.x + positionX + positions[i].x_offset;
+        vertVector[i].bl.y = mCacheGlyphVertList[idxInCache].bl.y + positionY + positions[i].y_offset;
+        vertVector[i].bl.s = mCacheGlyphVertList[idxInCache].bl.s;
+        vertVector[i].bl.t = mCacheGlyphVertList[idxInCache].bl.t;
+
+        vertVector[i].br.x = mCacheGlyphVertList[idxInCache].br.x + positionX + positions[i].x_offset;
+        vertVector[i].br.y = mCacheGlyphVertList[idxInCache].br.y + positionY + positions[i].y_offset;
+        vertVector[i].br.s = mCacheGlyphVertList[idxInCache].br.s;
+        vertVector[i].br.t = mCacheGlyphVertList[idxInCache].br.t;
+
+        vertVector[i].tl.x = mCacheGlyphVertList[idxInCache].tl.x + positionX + positions[i].x_offset;
+        vertVector[i].tl.y = mCacheGlyphVertList[idxInCache].tl.y + positionY + positions[i].y_offset;
+        vertVector[i].tl.s = mCacheGlyphVertList[idxInCache].tl.s;
+        vertVector[i].tl.t = mCacheGlyphVertList[idxInCache].tl.t;
+
+        vertVector[i].tr.x = mCacheGlyphVertList[idxInCache].tr.x + positionX + positions[i].x_offset;
+        vertVector[i].tr.y = mCacheGlyphVertList[idxInCache].tr.y + positionY + positions[i].y_offset;
+        vertVector[i].tr.s = mCacheGlyphVertList[idxInCache].tr.s;
+        vertVector[i].tr.t = mCacheGlyphVertList[idxInCache].tr.t;
+
+        // Calculate vertex indicies
+        size_t idxOffset = i * 4;
+        idxVector[i].bl1 = 0 + idxOffset;
+        idxVector[i].br1 = 1 + idxOffset;
+        idxVector[i].tl1 = 2 + idxOffset;
+        idxVector[i].br2 = 1 + idxOffset;
+        idxVector[i].tl2 = 2 + idxOffset;
+        idxVector[i].tr2 = 3 + idxOffset;
+
+        // Advance the position (">> 6" is the standard freetype formulae)
+        positionX += (positions[i].x_advance >> 6);
     }
 
-    // TODO move these into TextImpl class ?
+    // TODO move these into TextImpl class !
+    Program& program = Program::getInstance();
+    glUseProgram(program.mProgram);
     glGenVertexArrays(1, &mTextVAO);
     glGenBuffers(1, &mTextVBO);
     glGenBuffers(1, &mTextIBO);
     glBindVertexArray(mTextVAO);
     glBindBuffer(GL_ARRAY_BUFFER, mTextVBO);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mTextIBO);
-    // TODO replace NULL by real datas
-    glBufferData(GL_ARRAY_BUFFER, textLength * sizeof(GlyphVerticies), NULL, GL_DYNAMIC_DRAW);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, textLength * sizeof(GlyphIndices), NULL, GL_DYNAMIC_DRAW);
+    // Load data into the GPU
+    glBufferData(GL_ARRAY_BUFFER,         textLength * sizeof(GlyphVerticies), &vertVector[0], GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, textLength * sizeof(GlyphIndices),   &idxVector[0], GL_STATIC_DRAW);
     glEnableVertexAttribArray(program.mVertexPositionAttrib);
     glEnableVertexAttribArray(program.mVertexTextureCoordAttrib);
     glVertexAttribPointer(program.mVertexPositionAttrib, 2, GL_FLOAT, GL_FALSE, sizeof(GlyphVertex), 0);
     glVertexAttribPointer(program.mVertexTextureCoordAttrib, 2, GL_FLOAT, GL_FALSE, sizeof(GlyphVertex), reinterpret_cast<GLvoid*>(sizeof(GlyphVertex)/2)); // NOLINT
     GL_CHECK();
+
+    // TODO : for debug only
+    _textLength = textLength;
 
     return Text(aFontImplPtr);
 }
@@ -545,6 +582,13 @@ void FontImpl::drawCache(float aOffsetX, float aOffsetY, float aScaleX, float aS
     static bool bFirst = true;
     if (bFirst) {
         std::cout << "FontImpl::drawCache()\n";
+        // Print some statistics ; nb of char in cache, % of cache texture used...
+        std::cout << "Nb char in cache: " << mCacheGlyphIdxMap.size() << std::endl;
+        size_t nbPixelsUsedInFullLines = mCacheWidth * mCacheFreeSlotY;
+        size_t nbPixelsUsedInCurrentLine = mCacheFreeSlotX * mCacheLineHeight;
+        size_t nbPixelsUsed = nbPixelsUsedInFullLines + nbPixelsUsedInCurrentLine;
+        size_t nbPixels = mCacheWidth * mCacheHeight;
+        std::cout << "Percentage of cache usage: " << 100*nbPixelsUsed/nbPixels << "%";
         bFirst = false;
     }
 
@@ -555,14 +599,23 @@ void FontImpl::drawCache(float aOffsetX, float aOffsetY, float aScaleX, float aS
     glUniform2f(program.mScaleUnif, aScaleX, aScaleY);
     glUniform3f(program.mColorUnif, 1.0f, 1.0f, 0.0f);
 
-    glActiveTexture(GL_TEXTURE0 + program.mTextureUnit);
+    glActiveTexture(GL_TEXTURE0 + _TextureUnitId);
     glBindTexture(GL_TEXTURE_2D, mCacheTexture);
     // TODO Doc
     if (glBindSampler) {
         glBindSampler(0, 0);
     }
+    // Draw the cache texture
     glBindVertexArray(mCacheVAO);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
+    
+    // Draw the rendered text
+    // TODO move this in the TextImpl class
+    glUniform2f(program.mOffsetUnif, -200.0f, -200.0f);
+    glUniform2f(program.mScaleUnif, aScaleX/128, aScaleY/128);
+    glBindVertexArray(mTextVAO);
+    // TODO _textLength is for debug only
+    glDrawElements(GL_TRIANGLES, _textLength * 6, GL_UNSIGNED_SHORT, 0);
 }
 
 } // namespace gltext

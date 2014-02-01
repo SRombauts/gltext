@@ -40,7 +40,7 @@ public:
      * @param[in] aPixelSize        Vertical size of the font in pixel
      * @param[in] aCacheSize        Minimum number of characters to allocate into the cache (use a square value).
      */
-    FontImpl(const char* apPathFilename, unsigned int aPixelSize, unsigned int aCacheSize);
+    FontImpl(const char* apPathFilename, size_t aPixelSize, size_t aCacheSize);
     /**
      * @brief Cleanup all Freetype and OpenGL ressources when the last reference is destroyed.
      */
@@ -88,7 +88,7 @@ private:
      *
      * @return Index of the cached glyph
      */
-    unsigned int cache(FT_UInt codepoint);
+    size_t cache(FT_UInt codepoint);
 
 private:
     /// Data of one of four glyph vertex
@@ -108,7 +108,6 @@ private:
     };
 
     /// Corresponding 6 indices used to described the 2 triangles that compose a glyph
-    // TODO This should be filled automatically by an algorithm
     struct GlyphIndices {
         GLushort bl1;   ///< Index 0 of the vertex in the Bottom Left corner (first triangle)
         GLushort br1;   ///< Index 1 of the vertex in the Bottom Right corner (first triangle)
@@ -119,19 +118,19 @@ private:
     };
 
     /// Association of codepoint/idx of the cached glyphs
-    typedef std::map<FT_UInt, unsigned long>    GlyphIdxMap;
+    typedef std::map<FT_UInt, size_t>   GlyphIdxMap;
     /// Vector of cached vertex and texture coordinates for each glyph
-    typedef std::vector<GlyphVerticies>         GlyphVertVector;
+    typedef std::vector<GlyphVerticies> GlyphVertVector;
     /// Vector of cached indices for each glyph
-    typedef std::vector<GlyphIndices>           GlyphIdxVector;
+    typedef std::vector<GlyphIndices>   GlyphIdxVector;
 
 private:
     std::string     mPathFilename;      ///< Path to the OpenType font file to open with Freetype.
-    unsigned int    mCacheWidth;        ///< Horizontal size of the cache texture.
-    unsigned int    mCacheHeight;       ///< Vertical size  of the cache texture.
-    unsigned int    mCacheLineHeight;   ///< Vertical size of the current line of character cache in pixel.
-    unsigned int    mCacheFreeSlotX;    ///< X coordinate of next free slot on the cache texture.
-    unsigned int    mCacheFreeSlotY;    ///< Y coordinate of next free slot on the cache texture.
+    size_t          mCacheWidth;        ///< Horizontal size of the cache texture.
+    size_t          mCacheHeight;       ///< Vertical size  of the cache texture.
+    size_t          mCacheLineHeight;   ///< Vertical size of the current line of character cache in pixel.
+    size_t          mCacheFreeSlotX;    ///< X coordinate of next free slot on the cache texture.
+    size_t          mCacheFreeSlotY;    ///< Y coordinate of next free slot on the cache texture.
     GlyphIdxMap     mCacheGlyphIdxMap;  ///< Association of codepoint/idx of the cached glyphs
     GlyphVertVector mCacheGlyphVertList; ///< List of cached data (vertex and texture coordinates, and indices)
 
