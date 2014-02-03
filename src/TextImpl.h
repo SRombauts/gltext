@@ -31,10 +31,18 @@ public:
      * @brief Encapsulate a text rendered
      *
      * @param[in] aFontImplPtr  Shared pointer to the Font implementation from which this Text is build.
+     * @param[in] aTextLength   Size of text (number of unicode codepoint, number of glyphs in GL buffers).
+     * @param[in] aTextVAO      Vertex Array Object used to render the text.
+     * @param[in] aTextVBO      Vertex Buffer Object used to render the text.
+     * @param[in] aTextIBO      Index Buffer Object used to render the text.
      *
      * @see Text::Text() for detailed explanation
      */
-    explicit TextImpl(const std::shared_ptr<const FontImpl>& aFontImplPtr);
+    explicit TextImpl(const std::shared_ptr<const FontImpl>&    aFontImplPtr,
+                      size_t                                    aTextLength,
+                      size_t                                    aTextVAO,
+                      size_t                                    aTextVBO,
+                      size_t                                    aTextIBO);
     /**
      * @brief Cleanup
      */
@@ -72,7 +80,7 @@ private:
      */
     const std::shared_ptr<const FontImpl> mFontImplPtr;
 
-    size_t mTextSize;                   ///< Size of text (number of unicode codepoint, number of glyphs in GL buffers)
+    size_t mTextLength;                 ///< Size of text (number of unicode codepoint, number of glyphs in GL buffers)
 
     GLuint mTextVAO;                    ///< Vertex Array Object used to render the text
     GLuint mTextVBO;                    ///< Vertex Buffer Object used to render the text

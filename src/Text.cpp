@@ -18,8 +18,12 @@
 namespace gltext {
 
 // Encapsulate the rendered text returned by Font::render(), ready to be drawn with OpenGL.
-Text::Text(const std::shared_ptr<const FontImpl>& aFontImplPtr) {
-    mImplPtr.reset(new TextImpl(aFontImplPtr));
+Text::Text(const std::shared_ptr<const FontImpl>&   aFontImplPtr,
+           size_t                                   aTextLength,
+           size_t                                   aTextVAO,
+           size_t                                   aTextVBO,
+           size_t                                   aTextIBO) {
+    mImplPtr.reset(new TextImpl(aFontImplPtr, aTextLength, aTextVAO, aTextVBO, aTextIBO));
 }
 
 // Cleanup all Freetype and OpenGL ressources when the last reference is destroyed.

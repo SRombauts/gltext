@@ -31,6 +31,9 @@ namespace gltext {
  * from the inclusion of Freetype and HarfBuzz libraries.
  */
 class FontImpl {
+    // TODO : replace by a getter for mCacheTexture ?
+    friend class TextImpl;
+
 public:
     /**
      * @brief Ask Freetype to open a Font file and initialize it with the given size
@@ -143,10 +146,6 @@ private:
     GLuint mCacheVAO;                   ///< Vertex Array Object used only for debug draw of the cache
     GLuint mCacheVBO;                   ///< Vertex Buffer Object used only for debug draw of the cache
     GLuint mCacheIBO;                   ///< Index Buffer Object used only for debug draw of the cache
-    // TODO move these into TextImpl class
-    GLuint mTextVAO;                    ///< Vertex Array Object used to render a text
-    GLuint mTextVBO;                    ///< Vertex Buffer Object used to render a text
-    GLuint mTextIBO;                    ///< Index Buffer Object used to render a text
 };
 
 } // namespace gltext

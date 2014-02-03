@@ -128,9 +128,6 @@ FontImpl::~FontImpl() {
     glDeleteVertexArrays(1, &mCacheVAO);
     glDeleteBuffers(1, &mCacheVBO);
     glDeleteBuffers(1, &mCacheIBO);
-    glDeleteVertexArrays(1, &mTextVAO);
-    glDeleteBuffers(1, &mTextVBO);
-    glDeleteBuffers(1, &mTextIBO);
 }
 
 // Pre-render and cache the glyphs representing the given characters, to speed-up future rendering.
@@ -267,10 +264,6 @@ size_t FontImpl::cache(FT_UInt codepoint) {
     return idxInCache;
 }
 
-
-// TODO : for debug only
-static size_t _textLength = 0;
-
 // Render the given string of characters (or use existing cached glyphs) and put it on a VAO/VBO.
 Text FontImpl::render(const std::string& aCharacters, const std::shared_ptr<const FontImpl>& aFontImplPtr) {
     std::cout << "FontImpl::render(" << aCharacters << ")\n";
@@ -350,15 +343,18 @@ Text FontImpl::render(const std::string& aCharacters, const std::shared_ptr<cons
         positionX += (positions[i].x_advance >> 6);
     }
 
-    // TODO move these into TextImpl class !
+    // Generate data for a Text object
     Program& program = Program::getInstance();
     glUseProgram(program.mProgram);
-    glGenVertexArrays(1, &mTextVAO);
-    glGenBuffers(1, &mTextVBO);
-    glGenBuffers(1, &mTextIBO);
-    glBindVertexArray(mTextVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, mTextVBO);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mTextIBO);
+    GLuint textVAO;                    ///< Vertex Array Object used to render a text
+    GLuint textVBO;                    ///< Vertex Buffer Object used to render a text
+    GLuint textIBO;                    ///< Index Buffer Object used to render a text
+    glGenVertexArrays(1, &textVAO);
+    glGenBuffers(1, &textVBO);
+    glGenBuffers(1, &textIBO);
+    glBindVertexArray(textVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, textVBO);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, textIBO);
     // Load data into the GPU
     glBufferData(GL_ARRAY_BUFFER,         textLength * sizeof(GlyphVerticies), &vertVector[0], GL_STATIC_DRAW);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, textLength * sizeof(GlyphIndices),   &idxVector[0], GL_STATIC_DRAW);
@@ -368,10 +364,8 @@ Text FontImpl::render(const std::string& aCharacters, const std::shared_ptr<cons
     glVertexAttribPointer(program.mVertexTextureCoordAttrib, 2, GL_FLOAT, GL_FALSE, sizeof(GlyphVertex), reinterpret_cast<GLvoid*>(sizeof(GlyphVertex)/2)); // NOLINT
     GL_CHECK();
 
-    // TODO : for debug only
-    _textLength = textLength;
-
-    return Text(aFontImplPtr);
+    // Then give ownership of thoses data to a new dedicated Text object
+    return Text(aFontImplPtr, textLength, textVAO, textVBO, textIBO);
 }
 
 // Draw the cache texture for debug purpose.
@@ -405,14 +399,6 @@ void FontImpl::drawCache(float aOffsetX, float aOffsetY, float aScaleX, float aS
     // Draw the cache texture
     glBindVertexArray(mCacheVAO);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
-
-    // Draw the rendered text
-    // TODO move this in the TextImpl class
-    glUniform2f(program.mOffsetUnif, -200.0f, -200.0f);
-    glUniform2f(program.mScaleUnif, aScaleX/128, aScaleY/128);
-    glBindVertexArray(mTextVAO);
-    // TODO _textLength is for debug only
-    glDrawElements(GL_TRIANGLES, _textLength * 6, GL_UNSIGNED_SHORT, 0);
 }
 
 } // namespace gltext

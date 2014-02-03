@@ -37,8 +37,16 @@ public:
      * An OpenGL Index Buffer Object (IBO) is created to index the glyphs to be rendered.
      *
      * @param[in] aFontImplPtr  Shared pointer to the Font implementation from which this Text is build.
+     * @param[in] aTextLength   Size of text (number of unicode codepoint, number of glyphs in GL buffers).
+     * @param[in] aTextVAO      Vertex Array Object used to render the text.
+     * @param[in] aTextVBO      Vertex Buffer Object used to render the text.
+     * @param[in] aTextIBO      Index Buffer Object used to render the text.
      */
-    explicit Text(const std::shared_ptr<const FontImpl>& aFontImplPtr);
+    explicit Text(const std::shared_ptr<const FontImpl>&    aFontImplPtr,
+                  size_t                                    aTextLength,
+                  size_t                                    aTextVAO,
+                  size_t                                    aTextVBO,
+                  size_t                                    aTextIBO);
 
     /**
      * @brief Cleanup all Freetype and OpenGL ressources when the last reference is destroyed.
