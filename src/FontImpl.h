@@ -15,11 +15,12 @@
 #include <map>
 #include <vector>
 
-#include <hb-ft.h>  // HarfBuzz Freetype interface
+#include <hb-ft.h>      // HarfBuzz Freetype interface
 
 #include "glload.hpp"   // OpenGL types & function pointers
 
 namespace gltext {
+
 
 /**
  * @brief Private Implementation of the Freetype / HarfBuzz Font rendering.

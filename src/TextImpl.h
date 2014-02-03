@@ -9,7 +9,9 @@
  */
 #pragma once
 
-#include <memory>   // for std::shared_ptr
+#include <memory>       // for std::shared_ptr
+
+#include "glload.hpp"   // OpenGL types & function pointers
 
 namespace gltext {
 
@@ -69,6 +71,12 @@ private:
      * will only be destroyed when the last Font reference is destroyed
      */
     const std::shared_ptr<const FontImpl> mFontImplPtr;
+
+    size_t mTextSize;                   ///< Size of text (number of unicode codepoint, number of glyphs in GL buffers)
+
+    GLuint mTextVAO;                    ///< Vertex Array Object used to render the text
+    GLuint mTextVBO;                    ///< Vertex Buffer Object used to render the text
+    GLuint mTextIBO;                    ///< Index Buffer Object used to render the text
 };
 
 } // namespace gltext

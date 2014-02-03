@@ -36,6 +36,7 @@ set(GLTEXT_SOURCES
     src/FontImpl.cpp src/FontImpl.h
     src/Text.cpp
     src/TextImpl.cpp src/TextImpl.h
+    src/Program.cpp src/Program.h
     src/Freetype.cpp src/Freetype.h
     src/Exception.h
     # Temporary: replace with glload or glew
