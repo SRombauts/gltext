@@ -176,7 +176,13 @@ size_t FontImpl::cache(FT_UInt codepoint) {
         throw Exception("FT_Load_Glyph");
     }
 
-    // TODO verification and calculation
+    std::cout << "FontImpl::cache(" << codepoint << "):"
+        << " width=" << bitmap.width
+        << " rows=" << bitmap.rows
+        << " pitch=" << bitmap.pitch
+        << " advance.x=" << (mFace->glyph->advance.x >> 6) // ">> 6" is standard freetype formulae
+        << "\n";
+
 
     // Does the free slot is wide enough to hold the new glyph ?
     if (mCacheWidth <= mCacheFreeSlotX + bitmap.width) {
@@ -185,6 +191,7 @@ size_t FontImpl::cache(FT_UInt codepoint) {
         mCacheFreeSlotX = 0;
         mCacheLineHeight = 0;
     }
+
     // Does the free slot is high enough to hold the new glyph ?
     if (mCacheHeight <= mCacheFreeSlotY + bitmap.rows) {
         throw Exception("Cache overflow");
@@ -198,13 +205,6 @@ size_t FontImpl::cache(FT_UInt codepoint) {
     }
     // GL_UNPACK_ROW_LENGTH defines the number of pixels in a row
     glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch);
-
-    std::cout << "FontImpl::cache(" << codepoint << "):"
-        << " width=" << bitmap.width
-        << " rows=" << bitmap.rows
-        << " pitch=" << pitch << " (" << bitmap.pitch << ")"
-        << " advance.x=" << (mFace->glyph->advance.x >> 6) // ">> 6" is standard freetype formulae
-        << "\n";
 
     // Load the newly rendered glyph into the texture cache
     glTexSubImage2D(
@@ -364,7 +364,7 @@ Text FontImpl::render(const std::string& aCharacters, const std::shared_ptr<cons
     glVertexAttribPointer(program.mVertexTextureCoordAttrib, 2, GL_FLOAT, GL_FALSE, sizeof(GlyphVertex), reinterpret_cast<GLvoid*>(sizeof(GlyphVertex)/2)); // NOLINT
     GL_CHECK();
 
-    // Then give ownership of thoses data to a new dedicated Text object
+    // Then give ownership of those data to a new dedicated Text object
     return Text(aFontImplPtr, textLength, textVAO, textVBO, textIBO);
 }
 
@@ -379,7 +379,7 @@ void FontImpl::drawCache(float aOffsetX, float aOffsetY, float aScaleX, float aS
         size_t nbPixelsUsedInCurrentLine = mCacheFreeSlotX * mCacheLineHeight;
         size_t nbPixelsUsed = nbPixelsUsedInFullLines + nbPixelsUsedInCurrentLine;
         size_t nbPixels = mCacheWidth * mCacheHeight;
-        std::cout << "Percentage of cache usage: " << 100*nbPixelsUsed/nbPixels << "%";
+        std::cout << "Percentage of cache usage: " << 100*nbPixelsUsed/nbPixels << "%\n";
         bFirst = false;
     }
 
