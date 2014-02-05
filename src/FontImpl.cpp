@@ -133,7 +133,7 @@ FontImpl::~FontImpl() {
 }
 
 // Pre-render and cache the glyphs representing the given characters, to speed-up future rendering.
-void FontImpl::cache(const std::string& aCharacters) {
+float FontImpl::cache(const std::string& aCharacters) {
     std::cout << "FontImpl::cache(" << aCharacters << ")\n";
 
     // Put the provided UTF-8 encoded characters into a Harfbuzz buffer
@@ -164,10 +164,12 @@ void FontImpl::cache(const std::string& aCharacters) {
             cache(glyphs[i].codepoint);
         }
     }
+
+    return usage();
 }
 
 // Pre-render and cache the glyph representing the given unicode Unicode codepoint.
-size_t FontImpl::cache(FT_UInt codepoint) {
+void FontImpl::cache(FT_UInt codepoint) {
     const size_t idxInCache = mCacheGlyphIdxMap.size();
     const FT_Bitmap& bitmap = mFace->glyph->bitmap;
 
@@ -262,12 +264,18 @@ size_t FontImpl::cache(FT_UInt codepoint) {
         mCacheFreeSlotX = 0;
         mCacheLineHeight = 0;
     }
-
-    return idxInCache;
 }
 
-// Render the given string of characters (or use existing cached glyphs) and put it on a VAO/VBO.
-Text FontImpl::render(const std::string& aCharacters, const std::shared_ptr<const FontImpl>& aFontImplPtr) {
+// Caculate the area of texture cache used to store already rendered glyphs.
+float FontImpl::usage() const {
+    size_t nbPixelsUsedInPrecedingLines = mCacheWidth * mCacheFreeSlotY;
+    size_t nbPixelsUsedInCurrentLine = mCacheFreeSlotX * mCacheLineHeight;
+    size_t nbPixelsTotal = mCacheWidth * mCacheHeight;
+    return ((nbPixelsUsedInPrecedingLines + nbPixelsUsedInCurrentLine)/static_cast<float>(nbPixelsTotal));
+}
+
+// Assemble data from cached glyphs to represent the given string of characters, and put them on a VAO.
+Text FontImpl::assemble(const std::string& aCharacters, const std::shared_ptr<const FontImpl>& aFontImplPtr) const {
     std::cout << "FontImpl::render(" << aCharacters << ")\n";
 
     // Put the provided UTF-8 encoded characters into a Harfbuzz buffer
@@ -307,8 +315,8 @@ Text FontImpl::render(const std::string& aCharacters, const std::shared_ptr<cons
             // if already in cache, get its index
             idxInCache = iGlyph->second;
         } else {
-            // if not, render and add the glyph into the cache, then get its index
-            idxInCache = cache(glyphs[i].codepoint);
+            // if not in cache, throws
+            throw Exception("assemble: missing glyph from the cache");
         }
 
         // Use cache to fill a VBO and a VBI, and a VAO
@@ -371,17 +379,13 @@ Text FontImpl::render(const std::string& aCharacters, const std::shared_ptr<cons
 }
 
 // Draw the cache texture for debug purpose.
-void FontImpl::drawCache(float aOffsetX, float aOffsetY, float aScaleX, float aScaleY) {
+void FontImpl::drawCache(float aOffsetX, float aOffsetY, float aScaleX, float aScaleY) const {
     static bool bFirst = true;
     if (bFirst) {
         std::cout << "FontImpl::drawCache()\n";
         // Print some statistics ; nb of char in cache, % of cache texture used...
         std::cout << "Nb char in cache: " << mCacheGlyphIdxMap.size() << std::endl;
-        size_t nbPixelsUsedInFullLines = mCacheWidth * mCacheFreeSlotY;
-        size_t nbPixelsUsedInCurrentLine = mCacheFreeSlotX * mCacheLineHeight;
-        size_t nbPixelsUsed = nbPixelsUsedInFullLines + nbPixelsUsedInCurrentLine;
-        size_t nbPixels = mCacheWidth * mCacheHeight;
-        std::cout << "Percentage of cache usage: " << 100*nbPixelsUsed/nbPixels << "%\n";
+        std::cout << "Percentage of cache usage: " << 100*usage() << "%\n";
         bFirst = false;
     }
 

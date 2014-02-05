@@ -31,7 +31,7 @@ namespace gltext {
  * from the inclusion of Freetype and HarfBuzz libraries.
  */
 class FontImpl {
-    // TODO : replace by a getter for mCacheTexture ?
+    // TODO : replace by a getter for mCacheTexture
     friend class TextImpl;
 
 public:
@@ -53,23 +53,25 @@ public:
     /**
      * @brief Pre-render and cache the glyphs representing the given characters, to speed-up future rendering.
      *
-     * @see Font::Font() for detailed explanation
+     * @see Font::cache() for detailed explanation
      *
      * @param[in] aCharacters   UTF-8 encoded string of characters to pre-render and add to the cache.
+     *
+     * @return The cache usage, in the range [0.0f; 1.0f]
      */
-    void cache(const std::string& aCharacters);
+    float cache(const std::string& aCharacters);
 
     /**
-     * @brief Render the given string of characters (or use existing cached glyphs) and put it on a VAO.
+     * @brief Assemble data from cached glyphs to represent the given string of characters, and put them on a VAO.
      *
-     * @see Font::Font() for detailed explanation
+     * @see Font::assemble() for detailed explanation
      *
      * @param[in] aCharacters   UTF-8 encoded string of characters to pre-render and add to the cache.
      * @param[in] aFontImplPtr  Shared pointer to this Private Implementation.
      *
      * @return Encapsulation of the constant text rendered with Freetype, ready to be drawn with OpenGL.
      */
-    Text render(const std::string& aCharacters, const std::shared_ptr<const FontImpl>& aFontImplPtr);
+    Text assemble(const std::string& aCharacters, const std::shared_ptr<const FontImpl>& aFontImplPtr) const;
 
     /**
      * @brief Draw the cache texture for debug purpose.
@@ -80,19 +82,24 @@ public:
      * @param[in] aScaleY   Scale the height of the area to draw the texture.
      *
      * @todo use glm::vec2
-     * @todo add color
+     * @todo remove all parameters
      */
-    void drawCache(float aOffsetX, float aOffsetY, float aScaleX, float aScaleY);
+    void drawCache(float aOffsetX, float aOffsetY, float aScaleX, float aScaleY) const;
 
 private:
     /**
      * @brief Pre-render and cache the glyph representing the given unicode Unicode codepoint.
      *
      * @param[in] codepoint Unicode character codepoint.
-     *
-     * @return Index of the cached glyph
      */
-    size_t cache(FT_UInt codepoint);
+    void cache(FT_UInt codepoint);
+
+    /**
+     * @brief Caculate the area of texture cache used to store already rendered glyphs.
+     *
+     * @return The cache usage, in the range [0.0f; 1.0f]
+     */
+    float usage() const;
 
 private:
     /// Data of one of four glyph vertex

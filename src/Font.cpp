@@ -28,21 +28,21 @@ Font::~Font() {
 }
 
 // Pre-render and cache the glyphs representing the given characters, to speed-up future rendering.
-void Font::cache(const std::string& aCharacters) {
+float Font::cache(const std::string& aCharacters) {
     assert(mImplPtr);
 
-    mImplPtr->cache(aCharacters);
+    return mImplPtr->cache(aCharacters);
 }
 
-// Render the given string of characters (or use existing cached glyphs) and put it on a VAO/VBO.
-Text Font::render(const std::string& aCharacters) {
+// Assemble data from cached glyphs to represent the given string of characters, and put them on a VAO.
+Text Font::assemble(const std::string& aCharacters) const {
     assert(mImplPtr);
 
-    return mImplPtr->render(aCharacters, mImplPtr);
+    return mImplPtr->assemble(aCharacters, mImplPtr);
 }
 
 // Draw the cache texture for debug purpose.
-void Font::drawCache(float aX, float aY, float aW, float aH) {
+void Font::drawCache(float aX, float aY, float aW, float aH) const {
     assert(mImplPtr);
 
     mImplPtr->drawCache(aX, aY, aW, aH);

@@ -63,28 +63,35 @@ public:
     /**
      * @brief Pre-render and cache the glyphs representing the given characters, to speed-up future rendering.
      *
-     *  This can be time consuming, and involve some memory transfer to the graphic card.
-     * It is best done when loading data, before starting real time rendering. Still, it this step is optional.
+     *  The cache texture is filled with bitmap glyphs. A vector of structs is filled with their texture coordinates.
      *
-     *  The cache texture is filled with bitmap glyphs, as well as the An OpenGL VBO with their texture coordinates.
+     *  This can be time consuming, and involve some memory transfer to the graphic card.
+     * It is best done when loading data, before starting real time rendering.
+     * Thus, caching glyph before assembling texts is mandatory.
      *
      * @param[in] aCharacters   UTF-8 encoded string of characters to pre-render and add to the cache.
+     *
+     * @return The cache usage, in the range [0.0f; 1.0f]
      */
-    void cache(const std::string& aCharacters);
+    float cache(const std::string& aCharacters);
 
     /**
-     * @brief Render the given string of characters (or use existing cached glyphs) and put it on a VAO.
+     * @brief Assemble data from cached glyphs to represent the given string of characters, and put them on a VAO.
+     *
+     * This method require cache to be fully loaded beforehand, which guaranty speed and multithread safety.
+     *
+     * @warning Throws if any characters is missing from cache.
      *
      *  An OpenGL Vertex Array Object (VAO) is created and initialized with states needed to draw the text.
      * An OpenGL Vertex Buffer Object (VBO) is also created to contain glyphs vertex position and texture coordinates.
-     * An OpenGL Index Buffer Object (IBO) is created to index the glyps to be rendered.
+     * An OpenGL Index Buffer Object (IBO) is created to index the glyphs vertices to be rendered.
      * Those internal data are encapsulated and reference-counted into the returned Text object.
      *
      * @param[in] aCharacters   UTF-8 encoded string of characters to pre-render and add to the cache.
      *
      * @return Encapsulation of the constant text rendered with Freetype, ready to be drawn with OpenGL.
      */
-    Text render(const std::string& aCharacters);
+    Text assemble(const std::string& aCharacters) const;
 
     /**
      * @brief Draw the cache texture for debug purpose.
@@ -94,7 +101,7 @@ public:
      * @param[in] aW    Width of the area to draw the texture.
      * @param[in] aH    Height of the area to draw the texture.
      */
-    void drawCache(float aX, float aY, float aW, float aH);
+    void drawCache(float aX, float aY, float aW, float aH) const;
 
 private:
     /**
