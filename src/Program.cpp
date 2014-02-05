@@ -20,7 +20,7 @@
 namespace gltext {
 
 
-const GLuint _TextureUnitId = 0;   ///< Id of the texture image unit to use (0)
+const GLuint _TextureUnitIdx = 0;   ///< Id of the texture image unit to use (0)
 
 
 // Check for any previous OpenGL error. Use with the GL_CHECK() macro
@@ -101,7 +101,7 @@ Program::Program() {
     mOffsetUnif = glGetUniformLocation(mProgram, "offset");
     mColorUnif = glGetUniformLocation(mProgram, "color");
     GLuint textureCacheUnif = glGetUniformLocation(mProgram, "textureCache");
-    glUniform1i(textureCacheUnif, _TextureUnitId);
+    glUniform1i(textureCacheUnif, _TextureUnitIdx);
     GL_CHECK();
 }
 

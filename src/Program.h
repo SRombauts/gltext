@@ -34,7 +34,7 @@ void checkOpenGlError(const char* apFile, int aLine);
 /// Macro checking for any previous OpenGL error.
 #define GL_CHECK()  checkOpenGlError(__FILE__, __LINE__)
 
-extern const GLuint _TextureUnitId;   ///< Id of the texture image unit to use (0)
+extern const GLuint _TextureUnitIdx;   ///< Id of the texture image unit to use (0)
 
 
 /**

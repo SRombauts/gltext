@@ -17,6 +17,7 @@
 #include <cassert>
 #include <cmath>
 #include <string>
+#include <vector>
 #include <iostream>     // NOLINT TODO
 
 
@@ -110,10 +111,11 @@ FontImpl::FontImpl(const char* apPathFilename, size_t aPixelSize, size_t aCacheS
     GL_CHECK();
 
     // Cache texture
-    glActiveTexture(GL_TEXTURE0 + _TextureUnitId);
+    glActiveTexture(GL_TEXTURE0 + _TextureUnitIdx);
     glGenTextures(1, &mCacheTexture);
     glBindTexture(GL_TEXTURE_2D, mCacheTexture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, mCacheWidth, mCacheHeight, 0, GL_RED, GL_UNSIGNED_BYTE, NULL);
+    std::vector<GLubyte> emptyData(mCacheWidth * mCacheHeight * sizeof(GLfloat), 0); // transparent black texture
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, mCacheWidth, mCacheHeight, 0, GL_RED, GL_UNSIGNED_BYTE, &emptyData[0]);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -146,7 +148,7 @@ void FontImpl::cache(const std::string& aCharacters) {
     hb_glyph_info_t* glyphs = hb_buffer_get_glyph_infos(buffer, 0);
 
     // Cache texture, used to render & cache characters
-    glActiveTexture(GL_TEXTURE0 + _TextureUnitId);
+    glActiveTexture(GL_TEXTURE0 + _TextureUnitIdx);
     glBindTexture(GL_TEXTURE_2D, mCacheTexture);
     // Affects the unpacking of pixel data from memory. Specifies the alignment requirements
     // for the start of each pixel row in memory; 1 for byte-alignment (See also GL_UNPACK_ROW_LENGTH).
@@ -221,7 +223,7 @@ size_t FontImpl::cache(FT_UInt codepoint) {
     GlyphVerticies glyphVerticies;
 
     int offsetX = mFace->glyph->bitmap_left;
-    int offsetY = mFace->glyph->bitmap_top - bitmap.rows; // TODO SRO : negative !? (-1)
+    int offsetY = mFace->glyph->bitmap_top - bitmap.rows; // Can be negative
 
     glyphVerticies.bl.x = static_cast<float>(offsetX);
     glyphVerticies.bl.y = static_cast<float>(offsetY);
@@ -281,7 +283,7 @@ Text FontImpl::render(const std::string& aCharacters, const std::shared_ptr<cons
     hb_glyph_position_t* positions = hb_buffer_get_glyph_positions(buffer, 0);
 
     // Cache texture, used only to render & cache new characters
-    glActiveTexture(GL_TEXTURE0 + _TextureUnitId);
+    glActiveTexture(GL_TEXTURE0 + _TextureUnitIdx);
     glBindTexture(GL_TEXTURE_2D, mCacheTexture);
     // Affects the unpacking of pixel data from memory. Specifies the alignment requirements
     // for the start of each pixel row in memory; 1 for byte-alignment (See also GL_UNPACK_ROW_LENGTH).
@@ -386,16 +388,16 @@ void FontImpl::drawCache(float aOffsetX, float aOffsetY, float aScaleX, float aS
     Program& program = Program::getInstance();
     glUseProgram(program.mProgram);
 
+    // TODO remove this, shall be down outside of this method
     glUniform2f(program.mOffsetUnif, aOffsetX, aOffsetY);
     glUniform2f(program.mScaleUnif, aScaleX, aScaleY);
     glUniform3f(program.mColorUnif, 1.0f, 1.0f, 0.0f);
 
-    glActiveTexture(GL_TEXTURE0 + _TextureUnitId);
+    glActiveTexture(GL_TEXTURE0 + _TextureUnitIdx);
     glBindTexture(GL_TEXTURE_2D, mCacheTexture);
-    // TODO Doc
-    if (glBindSampler) {
-        glBindSampler(0, 0);
-    }
+    // Bind to sampler name zero == the currently bound texture's sampler state becomes active (no dedicated sampler)
+    glBindSampler(_TextureUnitIdx, 0);
+
     // Draw the cache texture
     glBindVertexArray(mCacheVAO);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);

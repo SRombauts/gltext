@@ -51,17 +51,15 @@ void TextImpl::draw() {
     Program& program = Program::getInstance();
     glUseProgram(program.mProgram);
 
-    // TODO use variables
+    // TODO remove this, shall be down outside of this method
     glUniform2f(program.mOffsetUnif, -200.0f, -200.0f);
     glUniform2f(program.mScaleUnif, 1/256.0f, 1/256.0f);
     glUniform3f(program.mColorUnif, 1.0f, 1.0f, 0.0f);
 
-    glActiveTexture(GL_TEXTURE0 + _TextureUnitId);
+    glActiveTexture(GL_TEXTURE0 + _TextureUnitIdx);
     glBindTexture(GL_TEXTURE_2D, mFontImplPtr->mCacheTexture);
-    // TODO Doc
-    if (glBindSampler) {
-        glBindSampler(0, 0);
-    }
+    // Bind to sampler name zero == the currently bound texture's sampler state becomes active (no dedicated sampler)
+    glBindSampler(_TextureUnitIdx, 0);
 
     // Draw the rendered text
     glBindVertexArray(mTextVAO);
