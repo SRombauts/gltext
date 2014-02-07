@@ -203,12 +203,17 @@ endif()
 
 option(GLTEXT_RUN_DOXYGEN "Run Doxygen C++ documentation tool." ON)
 if (GLTEXT_RUN_DOXYGEN)
-    # add a Doxygen target to the "all" target
-    add_custom_target(gltext_doxygen
-     ALL
-     COMMAND doxygen Doxyfile > ${DEV_NULL}
-     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-    )
+    find_package(Doxygen)
+    if (DOXYGEN_FOUND)
+        # add a Doxygen target to the "all" target
+        add_custom_target(gltext_doxygen
+         ALL
+         COMMAND doxygen Doxyfile > ${DEV_NULL}
+         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+        )
+    else()
+        message(STATUS "Doxygen not found")
+    endif()
 else()
     message(STATUS "GLTEXT_RUN_DOXYGEN OFF")
 endif()
