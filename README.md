@@ -1,7 +1,8 @@
 C++ OpenGL Freetype & HarfBuzz text drawing
 ---------------------------------------
 
-Simple library to draw text in OpenGL
+Simple library to draw text in OpenGL, in alpha stage.
+Greatly inspired by other https://github.com/branan/gltext.
 
 ### License
 
@@ -18,7 +19,7 @@ or copy at http://opensource.org/licenses/MIT)
 sudo apt-get install libxrandr-dev libxi-dev libgl1-mesa-dev mesa-common-dev
 ```
 
-### Building the application
+### Building the library
 
 On Linux :
 
@@ -30,6 +31,6 @@ cmake --build .     # of simply "make"
 On Windows :
 
 ```bash
-cmake . -G "Visual Studio 10"
+cmake . -G "Visual Studio 12 2013"
 cmake --build .     # or simply [open and build solution]
 ```
